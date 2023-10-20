@@ -25,7 +25,7 @@ public class ShowRateView extends VerticalLayout {
         grid.addColumn(rate -> rate.getPortOfDestination().getPortShortCode(), "pod").setHeader("POD")
                 .setTooltipGenerator(rate -> rate.getPortOfDestination().getPortCity() +", "+ rate.getPortOfDestination().getPortCountry());
 
-        grid.addColumn(Rate::getCommodity, "commodity").setHeader("Commodity");
+        //grid.addColumn(Rate::getCommodity, "commodity").setHeader("Commodity");
         grid.addColumn(Rate::getTerm, "term").setHeader("Term").setSortable(false);
         grid.addColumn(Rate::getTwentyFtRate, "rate20").setHeader("20' Rate");
         grid.addColumn(Rate::getFortyFtRate, "rate40").setHeader("40' Rate");
@@ -61,8 +61,8 @@ public class ShowRateView extends VerticalLayout {
                 || rate.getPortOfLoading().getPortShortCode().toLowerCase().contains(searchTerm.toLowerCase());
         boolean matchesPortCountry = rate.getPortOfDestination().getPortCountry().toLowerCase().contains(searchTerm.toLowerCase())
                 || rate.getPortOfLoading().getPortCountry().toLowerCase().contains(searchTerm.toLowerCase());
-        boolean matchesCarrier = rate.getCarrier().toLowerCase().contains(searchTerm.toLowerCase());
-        boolean matchesCommodity = rate.getCommodity().toLowerCase().contains(searchTerm.toLowerCase());
-        return matchesPortCity || matchesShortCode || matchesPortCountry || matchesCommodity || matchesCarrier;
+//        boolean matchesCarrier = rate.getCarrier().toLowerCase().contains(searchTerm.toLowerCase());
+//        boolean matchesCommodity = rate.getCommodity().toLowerCase().contains(searchTerm.toLowerCase());
+        return matchesPortCity || matchesShortCode || matchesPortCountry;// || matchesCommodity || matchesCarrier;
     }
 }

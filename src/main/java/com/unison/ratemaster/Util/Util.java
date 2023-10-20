@@ -1,13 +1,9 @@
 package com.unison.ratemaster.Util;
 
-import com.unison.ratemaster.Entity.Port;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 
 public class Util {
-    public static String getPortLabel(Port port) {
-        return port.getPortShortCode() + " - " + port.getPortCity() + ", " + port.getPortCountry();
-    }
 
     public static Notification getNotificationForError(String errorMessage) {
         Notification notification = new Notification();

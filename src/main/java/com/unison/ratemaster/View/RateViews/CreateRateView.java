@@ -1,8 +1,12 @@
 package com.unison.ratemaster.View.RateViews;
 
+import com.unison.ratemaster.Entity.Carrier;
+import com.unison.ratemaster.Entity.Commodity;
 import com.unison.ratemaster.Entity.Port;
 import com.unison.ratemaster.Entity.Rate;
 import com.unison.ratemaster.Enum.ShippingTerm;
+import com.unison.ratemaster.Service.CarrierService;
+import com.unison.ratemaster.Service.CommodityService;
 import com.unison.ratemaster.Service.PortService;
 import com.unison.ratemaster.Service.RateService;
 import com.unison.ratemaster.Util.Util;
@@ -18,7 +22,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,37 +31,40 @@ import java.util.List;
 @Route(value = "create-rate", layout = MainView.class)
 public class CreateRateView extends VerticalLayout {
 
-    public CreateRateView(@Autowired PortService portService, @Autowired RateService rateService) {
+    public CreateRateView(@Autowired PortService portService,
+                          @Autowired RateService rateService,
+                          @Autowired CarrierService carrierService,
+                          @Autowired CommodityService commodityService) {
         H3 pageTitle = new H3("Create Rate");
+
         // Entry form section
         FormLayout formLayout = new FormLayout();
 
         List<Port> portList = portService.getPorts();
+        List<Carrier> carrierList = carrierService.getAllCarriers();
+        List<Commodity> commodityList = commodityService.getAllCommodity();
 
-        ComboBox<Port> portOfLoading = new ComboBox<>("Port Of Loading");
-        portOfLoading.setItems(portList);
-        portOfLoading.setAllowCustomValue(true);
-        portOfLoading.setItemLabelGenerator(Util::getPortLabel);
-        portOfLoading.setRequired(true);
-        portOfLoading.setRequiredIndicatorVisible(true);
+        ComboBox<Port> portOfLoading = getPortComboBoxByItemListAndTitle(portList, "Port Of Loading");
+        ComboBox<Port> portOfDestination = getPortComboBoxByItemListAndTitle(portList, "Port Of Destination");
 
-        ComboBox<Port> portOfDestination = new ComboBox<>("Port Of Destination");
-        portOfDestination.setItems(portList);
-        portOfDestination.setAllowCustomValue(true);
-        portOfDestination.setItemLabelGenerator(Util::getPortLabel);
-        portOfDestination.setRequired(true);
-        portOfDestination.setRequiredIndicatorVisible(true);
+        ComboBox<Carrier> carrierComboBox = new ComboBox<>("Carrier");
+        carrierComboBox.setItems(carrierList);
+        carrierComboBox.setAllowCustomValue(true);
+        carrierComboBox.setItemLabelGenerator(Carrier::getName);
+        carrierComboBox.setRequired(true);
+        carrierComboBox.setRequiredIndicatorVisible(true);
 
-        //title
-        TextField commodity = new TextField("Commodity");
-        commodity.setRequired(true); commodity.setRequiredIndicatorVisible(true);
+        ComboBox<Commodity> commodityComboBox  = new ComboBox<>("Commodity");
+        commodityComboBox.setItems(commodityList);
+        commodityComboBox.setAllowCustomValue(true);
+        commodityComboBox.setItemLabelGenerator(Commodity::getCommoditySummary);
+        commodityComboBox.setRequired(true);
+        commodityComboBox.setRequiredIndicatorVisible(true);
 
         Select<ShippingTerm> term = new Select<>();
         term.setLabel("Term");
         term.setItems(ShippingTerm.values());
 
-        TextField carrier = new TextField("Carrier");
-        carrier.setRequired(true); carrier.setRequiredIndicatorVisible(true);
         //Amount
         BigDecimalField twentyFtRate = new BigDecimalField("20' Rate (USD)");
         twentyFtRate.setRequiredIndicatorVisible(false);
@@ -66,9 +72,17 @@ public class CreateRateView extends VerticalLayout {
         fortyFtRate.setRequiredIndicatorVisible(false);
         BigDecimalField fortyHQRate = new BigDecimalField("40' HC Rate (USD)");
         fortyHQRate.setRequiredIndicatorVisible(false);
+        BigDecimalField exwRate = new BigDecimalField("EXW Rate (USD)");
+        fortyHQRate.setRequiredIndicatorVisible(false);
 
 
         DatePicker validity = new DatePicker("Validity");
+
+        TextArea factoryLocation = new TextArea("Factory Location");
+        factoryLocation.setHeight(5, Unit.EM);
+        factoryLocation.setMaxLength(500);
+        factoryLocation.setValueChangeMode(ValueChangeMode.EAGER);
+        factoryLocation.addValueChangeListener(e -> e.getSource().setHelperText(e.getValue().length() + "/" + 500));
 
         TextArea remarks = new TextArea("Remarks");
         remarks.setHeight(5, Unit.EM);
@@ -76,7 +90,10 @@ public class CreateRateView extends VerticalLayout {
         remarks.setValueChangeMode(ValueChangeMode.EAGER);
         remarks.addValueChangeListener(e -> e.getSource().setHelperText(e.getValue().length() + "/" + 200));
 
-        formLayout.add(portOfLoading, portOfDestination, commodity, validity, twentyFtRate, fortyFtRate, fortyHQRate, carrier, remarks, term);
+        Button addScheduleButton = new Button("Add Schedule");
+
+        formLayout.add(portOfLoading, portOfDestination, commodityComboBox, carrierComboBox, twentyFtRate, fortyFtRate,
+                fortyHQRate, exwRate, validity, term, factoryLocation, remarks, addScheduleButton);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
         formLayout.setColspan(remarks,2);
         // Form section end
@@ -85,18 +102,30 @@ public class CreateRateView extends VerticalLayout {
             Rate rate = new Rate();
             rate.setValidity(validity.getValue());
             rate.setFortyFtHQRate(fortyHQRate.getValue());
-            rate.setCommodity(commodity.getValue());
-            rate.setCarrier(carrier.getValue());
+            rate.setCommodity(commodityComboBox.getValue());
+            rate.setCarrier(carrierComboBox.getValue());
             rate.setFortyFtRate(fortyFtRate.getValue());
             rate.setTwentyFtRate(twentyFtRate.getValue());
             rate.setTerm(term.getValue());
             rate.setPortOfDestination(portOfDestination.getValue());
             rate.setPortOfLoading(portOfLoading.getValue());
             rate.setRemarks(remarks.getValue());
+            rate.setTruckingRate(exwRate.getValue());
+            rate.setFactoryLocation(factoryLocation.getValue());
             rateService.saveRate(rate);
             Util.getNotificationForSuccess("Rate Saved!").open();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         add(pageTitle, formLayout, saveButton);
+    }
+
+    private static ComboBox<Port> getPortComboBoxByItemListAndTitle(List<Port> portList, String title) {
+        ComboBox<Port> portOfLoading = new ComboBox<>(title);
+        portOfLoading.setItems(portList);
+        portOfLoading.setAllowCustomValue(true);
+        portOfLoading.setItemLabelGenerator(Port::getPortLabel);
+        portOfLoading.setRequired(true);
+        portOfLoading.setRequiredIndicatorVisible(true);
+        return portOfLoading;
     }
 }
