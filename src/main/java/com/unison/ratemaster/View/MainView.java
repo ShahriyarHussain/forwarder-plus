@@ -65,6 +65,18 @@ public class MainView extends AppLayout {
             case VIEW_RATE:
                 link.setRoute(ShowRateView.class);
                 break;
+            case CREATE_SCHEDULE:
+                link.setRoute(ShowRateView.class);
+                break;
+            case VIEW_SCHEDULE:
+                link.setRoute(ShowRateView.class);
+                break;
+            case CREATE_SHIPMENT:
+                link.setRoute(ShowRateView.class);
+                break;
+            case VIEW_SHIPMENT:
+                link.setRoute(ShowRateView.class);
+                break;
             case CREATE_BILL_OF_LADING:
                 link.setRoute(CreateBLView.class);
                 break;

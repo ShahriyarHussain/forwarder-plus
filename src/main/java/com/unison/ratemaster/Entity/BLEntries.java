@@ -43,4 +43,6 @@ public class BLEntries {
     private String entryBy;
     private LocalDateTime editDate;
     private String editBy;
+    @OneToOne
+    private Shipment ShipmentId;
 }
