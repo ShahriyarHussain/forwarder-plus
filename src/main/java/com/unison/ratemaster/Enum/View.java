@@ -12,7 +12,10 @@ public enum View {
     VIEW_SCHEDULE("View Schedule"),
     CREATE_SHIPMENT("Create Shipment"),
     VIEW_SHIPMENT("View Shipment"),
-    CREATE_BILL_OF_LADING("Create B/L");
+    CREATE_BILL_OF_LADING("Create B/L"),
+    ADD_BOOKING("Add Booking"),
+    ADD_PARTY("Add Party"),
+    ADD_OTHERS("Add Others");
 
     private final String viewName;
 }
