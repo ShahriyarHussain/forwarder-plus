@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.Table;
+import java.math.BigDecimal;
 
 @Entity
 @Getter
@@ -20,4 +21,8 @@ public class FreightContainer {
     private String containerNo;
     @Id
     private String sealNo;
+    private BigDecimal grossWeight;
+    private BigDecimal measurement;
+    private Long noOfPackages;
+    private String packageUnit;
 }

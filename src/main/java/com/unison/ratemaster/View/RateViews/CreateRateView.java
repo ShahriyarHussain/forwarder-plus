@@ -1,14 +1,8 @@
 package com.unison.ratemaster.View.RateViews;
 
-import com.unison.ratemaster.Entity.Carrier;
-import com.unison.ratemaster.Entity.Commodity;
-import com.unison.ratemaster.Entity.Port;
-import com.unison.ratemaster.Entity.Rate;
+import com.unison.ratemaster.Entity.*;
 import com.unison.ratemaster.Enum.ShippingTerm;
-import com.unison.ratemaster.Service.CarrierService;
-import com.unison.ratemaster.Service.CommodityService;
-import com.unison.ratemaster.Service.PortService;
-import com.unison.ratemaster.Service.RateService;
+import com.unison.ratemaster.Service.*;
 import com.unison.ratemaster.Util.Util;
 import com.unison.ratemaster.View.MainView;
 import com.vaadin.flow.component.Unit;
@@ -16,6 +10,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -34,7 +29,8 @@ public class CreateRateView extends VerticalLayout {
     public CreateRateView(@Autowired PortService portService,
                           @Autowired RateService rateService,
                           @Autowired CarrierService carrierService,
-                          @Autowired CommodityService commodityService) {
+                          @Autowired CommodityService commodityService,
+                          @Autowired ScheduleService scheduleService) {
         H3 pageTitle = new H3("Create Rate");
 
         // Entry form section
@@ -90,7 +86,27 @@ public class CreateRateView extends VerticalLayout {
         remarks.setValueChangeMode(ValueChangeMode.EAGER);
         remarks.addValueChangeListener(e -> e.getSource().setHelperText(e.getValue().length() + "/" + 200));
 
+
+        /// SAVE SCHEDULE
+
         Button addScheduleButton = new Button("Add Schedule");
+
+        Dialog dialog = new Dialog();
+
+        dialog.setHeaderTitle("Add Schedule");
+
+        VerticalLayout dialogLayout = createDialogLayout(scheduleService);
+        dialog.add(dialogLayout);
+
+        //Button saveButton = createSaveButton(dialog);
+        Button cancelButton = new Button("Cancel", e -> dialog.close());
+        dialog.getFooter().add(cancelButton);
+        //dialog.getFooter().add(saveButton);
+
+        Button button = new Button("Show dialog", e -> dialog.open());
+        add(dialog, button);
+
+        /// SAVE SCHEDULE
 
         formLayout.add(portOfLoading, portOfDestination, commodityComboBox, carrierComboBox, twentyFtRate, fortyFtRate,
                 fortyHQRate, exwRate, validity, term, factoryLocation, remarks, addScheduleButton);
@@ -117,6 +133,16 @@ public class CreateRateView extends VerticalLayout {
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         add(pageTitle, formLayout, saveButton);
+    }
+
+    private VerticalLayout createDialogLayout(ScheduleService scheduleService) {
+        VerticalLayout verticalLayout = new VerticalLayout();
+//        List<Schedule>
+
+        return verticalLayout;
+
+
+
     }
 
     private static ComboBox<Port> getPortComboBoxByItemListAndTitle(List<Port> portList, String title) {
