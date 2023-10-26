@@ -17,7 +17,7 @@ public class ScheduleService {
         scheduleRepository.save(schedule);
     }
 
-    public List<Schedule> getAllSchedule() {
+    public List<Schedule> getValidSchedules() {
         return scheduleRepository.getValidSchedules(LocalDate.now());
     }
 }

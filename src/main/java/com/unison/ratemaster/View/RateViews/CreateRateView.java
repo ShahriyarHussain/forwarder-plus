@@ -13,6 +13,7 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.BigDecimalField;
@@ -25,6 +26,8 @@ import java.util.List;
 
 @Route(value = "create-rate", layout = MainView.class)
 public class CreateRateView extends VerticalLayout {
+
+    Schedule schedule;
 
     public CreateRateView(@Autowired PortService portService,
                           @Autowired RateService rateService,
@@ -89,22 +92,22 @@ public class CreateRateView extends VerticalLayout {
 
         /// SAVE SCHEDULE
 
-        Button addScheduleButton = new Button("Add Schedule");
-
         Dialog dialog = new Dialog();
 
         dialog.setHeaderTitle("Add Schedule");
 
-        VerticalLayout dialogLayout = createDialogLayout(scheduleService);
+        VerticalLayout dialogLayout = createDialogLayout(scheduleService, portList);
         dialog.add(dialogLayout);
 
         //Button saveButton = createSaveButton(dialog);
-        Button cancelButton = new Button("Cancel", e -> dialog.close());
+        Button cancelButton = new Button("Close", e -> dialog.close());
         dialog.getFooter().add(cancelButton);
         //dialog.getFooter().add(saveButton);
 
-        Button button = new Button("Show dialog", e -> dialog.open());
-        add(dialog, button);
+        Button addScheduleButton = new Button("Add Schedule", e -> dialog.open());
+        if (this.schedule != null) {
+            addScheduleButton.setText("Edit Schedule");
+        }
 
         /// SAVE SCHEDULE
 
@@ -135,14 +138,52 @@ public class CreateRateView extends VerticalLayout {
         add(pageTitle, formLayout, saveButton);
     }
 
-    private VerticalLayout createDialogLayout(ScheduleService scheduleService) {
+    private VerticalLayout createDialogLayout(ScheduleService scheduleService, List<Port> portList) {
+
         VerticalLayout verticalLayout = new VerticalLayout();
-//        List<Schedule>
+        List<Schedule> scheduleList = scheduleService.getValidSchedules();
 
+        HorizontalLayout horizontalLayout = new HorizontalLayout();
+        ComboBox<Schedule> scheduleComboBox  = new ComboBox<>("Tag Existing Schedule:");
+        scheduleComboBox.setItems(scheduleList);
+        scheduleComboBox.setAllowCustomValue(false);
+        scheduleComboBox.setItemLabelGenerator(this::getScheduleSummary);
+        scheduleComboBox.setRequired(true);
+        scheduleComboBox.setRequiredIndicatorVisible(true);
+
+        Button addExistingButton = new Button("Tag", event -> {
+            if (scheduleComboBox.isEmpty()) {
+                Util.getNotificationForError("No Schedule Selected!").open();
+            } else {
+                this.schedule = scheduleComboBox.getValue();
+            }
+        });
+
+        horizontalLayout.add(scheduleComboBox, addExistingButton);
+        horizontalLayout.setAlignItems(Alignment.END);
+
+        FormLayout formLayout = new FormLayout();
+        DatePicker portCutOff = new DatePicker("Port CutOff");
+        portCutOff.setRequired(true);
+        DatePicker vgmCutOff = new DatePicker("VGM CutOff");
+        DatePicker loadingPortETD = new DatePicker("ETD (Loading Port)");
+        loadingPortETD.setRequired(true);
+        DatePicker destinationPortETA = new DatePicker("ETA Destination");
+        destinationPortETA.setRequired(true);
+        ComboBox<Port> portOfLoading = getPortComboBoxByItemListAndTitle(portList, "Port Of Loading");
+        portOfLoading.setRequired(true);
+        ComboBox<Port> portOfDestination = getPortComboBoxByItemListAndTitle(portList, "Port Of Destination");
+        portOfDestination.setRequired(true);
+
+        formLayout.add(portCutOff, vgmCutOff, loadingPortETD, portOfLoading, destinationPortETA, portOfDestination);
+
+        verticalLayout.add(horizontalLayout, formLayout);
         return verticalLayout;
+    }
 
-
-
+    private String getScheduleSummary(Schedule schedule) {
+        return schedule.getPortOfLoading().getPortShortCode() + " to "
+                + schedule.getPortOfDestination().getPortShortCode() + " | " + schedule.getLoadingPortETD() + schedule.getDestinationPortETA();
     }
 
     private static ComboBox<Port> getPortComboBoxByItemListAndTitle(List<Port> portList, String title) {
