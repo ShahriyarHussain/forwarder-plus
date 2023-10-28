@@ -1,5 +1,6 @@
 package com.unison.ratemaster.Entity;
 
+import com.unison.ratemaster.Enum.VesselType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,6 +15,8 @@ public class Transshipment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String vesselName;
+    private VesselType vesselType;
     private LocalDate portArrival;
     private LocalDate portDeparture;
     @ManyToOne

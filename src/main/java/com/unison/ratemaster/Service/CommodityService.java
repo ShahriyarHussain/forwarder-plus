@@ -13,7 +13,6 @@ public class CommodityService {
 
     private final CommodityRepository commodityRepository;
 
-
     public List<Commodity> getAllCommodity() {
         return commodityRepository.findAll();
     }

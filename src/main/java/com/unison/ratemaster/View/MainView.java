@@ -1,9 +1,12 @@
 package com.unison.ratemaster.View;
 
 import com.unison.ratemaster.Enum.View;
-import com.unison.ratemaster.View.BLView.CreateBLView;
-import com.unison.ratemaster.View.RateViews.CreateRateView;
-import com.unison.ratemaster.View.RateViews.ShowRateView;
+import com.unison.ratemaster.View.BillOfLading.CreateBLView;
+import com.unison.ratemaster.View.Client.ManagePartyView;
+import com.unison.ratemaster.View.Rate.CreateRateView;
+import com.unison.ratemaster.View.Rate.ShowRateView;
+import com.unison.ratemaster.View.Schedule.CreateScheduleView;
+import com.unison.ratemaster.View.Shipment.CreateShipmentView;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.H2;
@@ -41,10 +44,11 @@ public class MainView extends AppLayout {
     private Tabs getTabs() {
         Tabs tabs = new Tabs();
         tabs.add(createTab(VaadinIcon.PENCIL, View.CREATE_RATE),
-                createTab(VaadinIcon.PENCIL, View.CREATE_SCHEDULE),
+                createTab(VaadinIcon.PENCIL, View.SCHEDULE_PANEL),
                 createTab(VaadinIcon.PENCIL, View.CREATE_BILL_OF_LADING),
-                createTab(VaadinIcon.LIST, View.VIEW_RATE),
-                createTab(VaadinIcon.LIST, View.VIEW_SCHEDULE));
+                createTab(VaadinIcon.PENCIL, View.CREATE_SHIPMENT),
+                createTab(VaadinIcon.PENCIL, View.MANAGE_PARTIES),
+                createTab(VaadinIcon.LIST, View.VIEW_RATE));
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
         return tabs;
     }
@@ -65,17 +69,14 @@ public class MainView extends AppLayout {
             case VIEW_RATE:
                 link.setRoute(ShowRateView.class);
                 break;
-            case CREATE_SCHEDULE:
-                link.setRoute(ShowRateView.class);
-                break;
-            case VIEW_SCHEDULE:
-                link.setRoute(ShowRateView.class);
+            case SCHEDULE_PANEL:
+                link.setRoute(CreateScheduleView.class);
                 break;
             case CREATE_SHIPMENT:
-                link.setRoute(ShowRateView.class);
+                link.setRoute(CreateShipmentView.class);
                 break;
-            case VIEW_SHIPMENT:
-                link.setRoute(ShowRateView.class);
+            case MANAGE_PARTIES:
+                link.setRoute(ManagePartyView.class);
                 break;
             case CREATE_BILL_OF_LADING:
                 link.setRoute(CreateBLView.class);

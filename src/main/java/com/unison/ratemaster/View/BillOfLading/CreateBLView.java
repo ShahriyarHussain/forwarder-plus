@@ -1,4 +1,4 @@
-package com.unison.ratemaster.View.BLView;
+package com.unison.ratemaster.View.BillOfLading;
 
 import com.unison.ratemaster.View.MainView;
 import com.vaadin.flow.component.Unit;

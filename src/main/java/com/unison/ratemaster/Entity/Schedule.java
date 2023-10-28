@@ -1,5 +1,6 @@
 package com.unison.ratemaster.Entity;
 
+import com.unison.ratemaster.Enum.VesselType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,10 +17,12 @@ public class Schedule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String vesselName;
+    private VesselType vesselType;
     private LocalDate portCutOff;
     private LocalDate vgmCutOff;
-    private LocalDate loadingPortETD;
-    private LocalDate destinationPortETA;
+    private LocalDate loadingPortEtd;
+    private LocalDate destinationPortEta;
     @OneToOne
     private Port portOfLoading;
     @OneToOne

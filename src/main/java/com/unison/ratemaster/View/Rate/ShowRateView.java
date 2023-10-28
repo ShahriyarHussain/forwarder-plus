@@ -1,4 +1,4 @@
-package com.unison.ratemaster.View.RateViews;
+package com.unison.ratemaster.View.Rate;
 
 
 import com.unison.ratemaster.Entity.Rate;
