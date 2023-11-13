@@ -18,6 +18,6 @@ public class ScheduleService {
     }
 
     public List<Schedule> getValidSchedules() {
-        return scheduleRepository.getValidSchedules(LocalDate.now());
+        return scheduleRepository.getValidSchedules(LocalDate.now().minusDays(3));
     }
 }

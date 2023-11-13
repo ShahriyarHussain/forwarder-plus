@@ -28,6 +28,7 @@ public class Rate {
     private String entryBy;
     private LocalDate editDate;
     private String editBy;
+    private Integer shipmentTime;
     @OneToOne
     private Port portOfLoading;
     @OneToOne
@@ -36,6 +37,4 @@ public class Rate {
     private Commodity commodity;
     @OneToOne
     private Carrier carrier;
-    @OneToOne
-    private Schedule schedule;
 }

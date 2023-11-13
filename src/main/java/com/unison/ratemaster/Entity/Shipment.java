@@ -1,5 +1,6 @@
 package com.unison.ratemaster.Entity;
 
+import com.unison.ratemaster.Enum.ContainerSize;
 import com.unison.ratemaster.Enum.ShipmentStatus;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,21 +23,24 @@ public class Shipment {
     @Length(max = 150)
     private String name;
     private String blNo;
+    @Length(max = 1000)
     private String shipperMarks;
+    @Length(max = 1000)
     private String goodsDescription;
+    @Length(max = 100)
+    private String invoiceNo;
+    private ContainerSize containerSize;
     private ShipmentStatus status;
     private LocalDateTime createdOn;
     private LocalDateTime lastUpdated;
     @OneToOne
-    private Booking bookingNo;
+    private Booking booking;
     @OneToOne
     private Client shipper;
     @OneToOne
     private Client consignee;
     @OneToOne
     private Client notifyParty;
-    @OneToOne
-    private Rate rate;
     @OneToOne
     private Schedule schedule;
     @OneToOne

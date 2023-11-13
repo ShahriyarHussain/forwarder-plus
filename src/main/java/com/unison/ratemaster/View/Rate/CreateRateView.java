@@ -91,8 +91,7 @@ public class CreateRateView extends VerticalLayout {
 
         ComboBox<Schedule> scheduleComboBox  = new ComboBox<>("Tag Existing Schedule:");
         scheduleComboBox.setItems(scheduleList);
-        scheduleComboBox.setAllowCustomValue(false);
-        scheduleComboBox.setItemLabelGenerator(this::getScheduleSummary);
+        scheduleComboBox.setItemLabelGenerator(Schedule::getScheduleSummary);
         scheduleComboBox.setRequired(true);
         scheduleComboBox.setRequiredIndicatorVisible(true);
 
@@ -126,10 +125,4 @@ public class CreateRateView extends VerticalLayout {
         add(pageTitle, formLayout, saveButton);
     }
 
-    private String getScheduleSummary(Schedule schedule) {
-        return schedule.getPortOfLoading().getPortName() + " to "
-                + schedule.getPortOfDestination().getPortName() + " | ETD: "
-                + Util.formatDateTime("dd/MM/yyyy", schedule.getLoadingPortEtd()) + ", ETA: "
-                + Util.formatDateTime("dd/MM/yyyy", schedule.getDestinationPortEta());
-    }
 }

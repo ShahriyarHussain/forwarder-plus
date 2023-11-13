@@ -1,17 +1,17 @@
 package com.unison.ratemaster.View.Shipment;
 
 import com.unison.ratemaster.Entity.*;
+import com.unison.ratemaster.Enum.ContainerSize;
 import com.unison.ratemaster.Enum.ContainerType;
 import com.unison.ratemaster.Enum.ShipmentStatus;
-import com.unison.ratemaster.Service.ClientService;
-import com.unison.ratemaster.Service.CommodityService;
-import com.unison.ratemaster.Service.RateService;
-import com.unison.ratemaster.Service.ShipmentService;
+import com.unison.ratemaster.Service.*;
 import com.unison.ratemaster.Util.Util;
 import com.unison.ratemaster.View.MainView;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.BigDecimalField;
@@ -34,23 +34,31 @@ public class CreateShipmentView extends VerticalLayout {
 
     public CreateShipmentView(@Autowired ShipmentService shipmentService,
                               @Autowired ClientService clientService,
-                              @Autowired RateService rateService,
+                              @Autowired ScheduleService scheduleService,
                               @Autowired CommodityService commodityService) {
 
         H2 title = new H2("Create Shipment");
+
+        FormLayout formLayout = new FormLayout();
 
         TextField name = new TextField("Shipment Name");
         name.setRequired(true);
 
         TextField blNo = new TextField("B/L No");
-        TextArea description = new TextArea("Goods Description");
-        TextArea shipperMarks = new TextArea("Goods Description");
+        TextArea goodsDescription = new TextArea("Goods Description");
+        TextArea shipperMarks = new TextArea("Shipper Marks");
 
         TextField bookingNo = new TextField("Booking No");
         TextField invoiceNo = new TextField("Invoice No");
+
         ComboBox<ContainerType> containerType = new ComboBox<>("Container Type:");
         containerType.setItems(ContainerType.values());
         containerType.setItemLabelGenerator(ContainerType::getContainerSize);
+
+        ComboBox<ContainerSize> containerSize = new ComboBox<>("Container Size");
+        containerSize.setItems(ContainerSize.values());
+        containerSize.setItemLabelGenerator(ContainerSize::getContainerSize);
+
         DatePicker stuffingDate = new DatePicker("Stuffing Date");
         TextField stuffingDepot = new TextField("Stuffing Depot");
         IntegerField numOfContainers = new IntegerField("Number of Containers");
@@ -69,10 +77,9 @@ public class CreateShipmentView extends VerticalLayout {
         notifyParty.setItems(clients);
         notifyParty.setItemLabelGenerator(Client::getName);
 
-        ComboBox<Rate> rates = new ComboBox<>("Rate");
-        rates.setItems(rateService.getValidRates());
-        rates.setItemLabelGenerator(rate -> rate.getRateId() + "- " + rate.getPortOfLoading().getPortName()
-                + " to " + rate.getPortOfDestination().getPortName());
+        ComboBox<Schedule> scheduleComboBox = new ComboBox<>("Schedule");
+        scheduleComboBox.setItems(scheduleService.getValidSchedules());
+        scheduleComboBox.setItemLabelGenerator(Schedule::getScheduleSummary);
 
         ComboBox<Commodity> commodities = new ComboBox<>("Commodity");
         commodities.setItems(commodityService.getAllCommodity());
@@ -104,12 +111,16 @@ public class CreateShipmentView extends VerticalLayout {
             Shipment shipment = new Shipment();
             shipment.setName(name.getValue());
             shipment.setBlNo(blNo.getValue());
+            shipment.setGoodsDescription(goodsDescription.getValue());
             shipment.setShipperMarks(shipperMarks.getValue());
             shipment.setShipper(shipper.getValue());
             shipment.setConsignee(consignee.getValue());
             shipment.setNotifyParty(notifyParty.getValue());
             shipment.setStatus(ShipmentStatus.NEW);
-            shipment.setRate(rates.getValue());
+//            shipment.setRate(rates.getValue());
+            shipment.setMasterBl(this.masterBl);
+            shipment.setCommodity(commodities.getValue());
+            shipment.setContainerSize(containerSize.getValue());
             shipment.setMasterBl(this.masterBl);
 
             Booking booking = new Booking();
@@ -120,6 +131,25 @@ public class CreateShipmentView extends VerticalLayout {
             booking.setStuffingDepot(stuffingDepot.getValue());
             booking.setNumOfContainers(numOfContainers.getValue());
             booking.setStuffingCostPerContainer(ratePerContainer.getValue());
+
+            try {
+                shipmentService.createNewShipment(shipment, booking);
+                Util.getNotificationForSuccess("Shipment Created Successfully!").open();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Util.getNotificationForError("Unexpected Error: " + e.getMessage()).open();
+            }
         });
+
+        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize, ratePerContainer,
+                stuffingDate, stuffingDepot, commodities, scheduleComboBox, goodsDescription, shipperMarks,
+                shipper, consignee, notifyParty, upload);
+        formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
+        formLayout.setColspan(goodsDescription,2);
+        formLayout.setColspan(shipperMarks,2);
+
+        add(title, formLayout, saveButton);
     }
 }

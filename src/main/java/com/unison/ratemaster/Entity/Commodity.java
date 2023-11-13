@@ -1,5 +1,7 @@
 package com.unison.ratemaster.Entity;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.validator.constraints.Length;
 
 import javax.persistence.*;
@@ -7,6 +9,8 @@ import javax.validation.constraints.NotEmpty;
 
 @Entity
 @Table(name = "COMMODITY")
+@Getter
+@Setter
 public class Commodity {
 
     @Id
