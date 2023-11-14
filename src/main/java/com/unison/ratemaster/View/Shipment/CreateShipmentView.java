@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Route(value = "create-shipment", layout = MainView.class)
@@ -85,6 +86,57 @@ public class CreateShipmentView extends VerticalLayout {
         commodities.setItems(commodityService.getAllCommodity());
         commodities.setItemLabelGenerator(Commodity::getCommoditySummary);
 
+        Upload upload = getUploadComponent();
+
+        Button saveButton = new Button("Save", event -> {
+            Shipment shipment = new Shipment();
+            shipment.setName(name.getValue());
+            shipment.setBlNo(blNo.getValue());
+            shipment.setNumberOfContainer(numOfContainers.getValue());
+            shipment.setInvoiceNo(invoiceNo.getValue());
+            shipment.setGoodsDescription(goodsDescription.getValue());
+            shipment.setShipperMarks(shipperMarks.getValue());
+            shipment.setShipper(shipper.getValue());
+            shipment.setConsignee(consignee.getValue());
+            shipment.setNotifyParty(notifyParty.getValue());
+            shipment.setStatus(ShipmentStatus.NEW);
+            shipment.setMasterBl(this.masterBl);
+            shipment.setCommodity(commodities.getValue());
+            shipment.setContainerSize(containerSize.getValue());
+            shipment.setMasterBl(this.masterBl);
+            shipment.setCreatedOn(LocalDateTime.now());
+            shipment.setLastUpdated(LocalDateTime.now());
+
+            Booking booking = new Booking();
+            booking.setBookingNo(bookingNo.getValue());
+            booking.setContainerType(containerType.getValue());
+            booking.setInvoiceNo(invoiceNo.getValue());
+            booking.setStuffingDate(stuffingDate.getValue());
+            booking.setStuffingDepot(stuffingDepot.getValue());
+            booking.setNumOfContainers(numOfContainers.getValue());
+            booking.setStuffingCostPerContainer(ratePerContainer.getValue());
+
+            try {
+                shipmentService.createNewShipment(shipment, booking);
+                Util.getNotificationForSuccess("Shipment Created Successfully!").open();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Util.getNotificationForError("Unexpected Error: " + e.getMessage()).open();
+            }
+        });
+
+        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize, ratePerContainer,
+                stuffingDate, stuffingDepot, commodities, scheduleComboBox, goodsDescription, shipperMarks,
+                shipper, consignee, notifyParty, upload);
+        formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
+        formLayout.setColspan(goodsDescription,2);
+        formLayout.setColspan(shipperMarks,2);
+
+        add(title, formLayout, saveButton);
+    }
+
+    private Upload getUploadComponent() {
         MemoryBuffer memoryBuffer = new MemoryBuffer();
         Upload upload = new Upload(memoryBuffer);
         upload.setDropAllowed(true);
@@ -106,50 +158,6 @@ public class CreateShipmentView extends VerticalLayout {
             String errorMessage = event.getErrorMessage();
             Util.getNotificationForError(errorMessage).open();
         });
-
-        Button saveButton = new Button("Save", event -> {
-            Shipment shipment = new Shipment();
-            shipment.setName(name.getValue());
-            shipment.setBlNo(blNo.getValue());
-            shipment.setGoodsDescription(goodsDescription.getValue());
-            shipment.setShipperMarks(shipperMarks.getValue());
-            shipment.setShipper(shipper.getValue());
-            shipment.setConsignee(consignee.getValue());
-            shipment.setNotifyParty(notifyParty.getValue());
-            shipment.setStatus(ShipmentStatus.NEW);
-//            shipment.setRate(rates.getValue());
-            shipment.setMasterBl(this.masterBl);
-            shipment.setCommodity(commodities.getValue());
-            shipment.setContainerSize(containerSize.getValue());
-            shipment.setMasterBl(this.masterBl);
-
-            Booking booking = new Booking();
-            booking.setBookingNo(bookingNo.getValue());
-            booking.setContainerType(containerType.getValue());
-            booking.setInvoiceNo(invoiceNo.getValue());
-            booking.setStuffingDate(stuffingDate.getValue());
-            booking.setStuffingDepot(stuffingDepot.getValue());
-            booking.setNumOfContainers(numOfContainers.getValue());
-            booking.setStuffingCostPerContainer(ratePerContainer.getValue());
-
-            try {
-                shipmentService.createNewShipment(shipment, booking);
-                Util.getNotificationForSuccess("Shipment Created Successfully!").open();
-            } catch (Exception e) {
-                e.printStackTrace();
-                Util.getNotificationForError("Unexpected Error: " + e.getMessage()).open();
-            }
-        });
-
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize, ratePerContainer,
-                stuffingDate, stuffingDepot, commodities, scheduleComboBox, goodsDescription, shipperMarks,
-                shipper, consignee, notifyParty, upload);
-        formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
-        formLayout.setColspan(goodsDescription,2);
-        formLayout.setColspan(shipperMarks,2);
-
-        add(title, formLayout, saveButton);
+        return upload;
     }
 }

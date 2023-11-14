@@ -23,12 +23,22 @@ public class ShipmentService {
     }
 
     @Transactional
+    public void saveEditedShipment(Shipment shipment) {
+        shipmentRepository.save(shipment);
+    }
+
+    @Transactional
+    public void deleteShipmentAndBooking(Shipment shipment) {
+        shipmentRepository.delete(shipment);
+    }
+
+    @Transactional
     public List<Shipment> getAllShipments() {
         return shipmentRepository.getAllShipmentOrderedByCreateDate();
     }
 
     @Transactional
-    public byte[] getPdf() {
-        return shipmentRepository.getPdf("MEDUD0884798");
+    public byte[] getPdf(String blNo) {
+        return shipmentRepository.getPdf(blNo);
     }
 }

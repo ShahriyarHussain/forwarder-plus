@@ -29,6 +29,7 @@ public class Shipment {
     private String goodsDescription;
     @Length(max = 100)
     private String invoiceNo;
+    private Integer numberOfContainer;
     private ContainerSize containerSize;
     private ShipmentStatus status;
     private LocalDateTime createdOn;
