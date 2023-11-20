@@ -69,7 +69,7 @@ public class CreateBLView extends VerticalLayout {
 
 
         Anchor anchor = new Anchor(new StreamResource("bl_new.pdf", (InputStreamFactory) () -> {
-            try (FileInputStream stream = new FileInputStream("Reports\\Blank_A4.jasper");){
+            try (FileInputStream stream = new FileInputStream("Reports/Blank_A4.jasper");){
                 final Map<String, Object> parameters = new HashMap<>();
                 return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters));
             } catch (JRException | IOException e) {

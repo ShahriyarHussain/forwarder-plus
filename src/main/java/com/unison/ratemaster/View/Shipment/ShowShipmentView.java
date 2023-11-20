@@ -32,14 +32,20 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
+import net.sf.jasperreports.engine.JREmptyDataSource;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperRunManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 
@@ -55,7 +61,6 @@ public class ShowShipmentView extends VerticalLayout {
         grid.addColumn(Shipment::getBlNo).setHeader("B/L No.").setSortable(false).setFrozen(true).setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getBooking().getBookingNo()).setHeader("Booking").setAutoWidth(true);
         grid.addColumn(Shipment::getInvoiceNo).setHeader("Invoice").setAutoWidth(true);
-//        grid.addColumn(Shipment::getName, "name").setHeader("Name");
         grid.addColumn(shipment -> shipment.getShipper().getName(), "name").setHeader("Shipper")
                 .setTooltipGenerator(shipment -> shipment.getShipper().getName());
         grid.addColumn(Shipment::getNumberOfContainer).setHeader("Containers").setAutoWidth(true);
@@ -63,14 +68,7 @@ public class ShowShipmentView extends VerticalLayout {
         grid.addColumn(shipment -> shipment.getStatus().name()).setHeader("Status").setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getCreatedOn().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setHeader("Created").setSortable(true);
         grid.addColumn(shipment -> shipment.getLastUpdated().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setHeader("Updated").setSortable(true);
-//        grid.addComponentColumn(shipment -> new Button(new Icon(VaadinIcon.PENCIL), event -> {
-//            try {
-//                createEditDialog(shipment, clientService, shipmentService, scheduleService).open();
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                Util.getNotificationForError("Unexpected Error: " + e.getMessage()).open();
-//            }
-//        })).setHeader("Edit");
+
         grid.addComponentColumn(shipment -> {
             Button downloadButton = new Button(new Icon(VaadinIcon.DOWNLOAD));
             Anchor anchor = new Anchor(new StreamResource(shipment.getBlNo() + ".pdf", (InputStreamFactory) () -> {
@@ -87,6 +85,21 @@ public class ShowShipmentView extends VerticalLayout {
             anchor.add(downloadButton);
             return anchor;
         }).setHeader("Download B/L");
+
+        grid.addComponentColumn(shipment -> {
+            Anchor anchor = new Anchor(new StreamResource(shipment.getBooking().getBookingNo() + ".pdf", (InputStreamFactory) () -> {
+                try (FileInputStream stream = new FileInputStream("Reports/shipment_advice.jasper")){
+                    final Map<String, Object> parameters = prepareParams(shipment);
+                    return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
+                } catch (JRException | IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }), "");
+            anchor.getElement().setAttribute("download", true);
+            anchor.add(new Button(new Icon(VaadinIcon.DOWNLOAD)));
+            return anchor;
+        }).setHeader("Download Advice");
+
         grid.setItems(shipmentService.getAllShipments());
         GridContextMenu<Shipment> menu = grid.addContextMenu();
         menu.addItem("Edit", event -> {
@@ -103,6 +116,23 @@ public class ShowShipmentView extends VerticalLayout {
         VerticalLayout layout = new VerticalLayout(grid);
         layout.setPadding(false);
         add(layout);
+    }
+
+    private Map<String, Object> prepareParams(Shipment shipment) {
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("BL_NO", shipment.getBlNo());
+        paramMap.put("BOOKING_NO", shipment.getBooking().getBookingNo());
+        paramMap.put("INVOICE_NO", shipment.getInvoiceNo());
+        paramMap.put("STUFFING_DATE", shipment.getBooking().getStuffingDate().format(DateTimeFormatter.ofPattern("dd-MMM-yyyy")));
+        paramMap.put("SHIPPER_NAME", shipment.getShipper().getName());
+        paramMap.put("CONSIGNEE", shipment.getConsignee().getName());
+        paramMap.put("CONTAINER", shipment.getNumberOfContainer() + "x" + shipment.getContainerSize().getContainerSize());
+        paramMap.put("COMMODITY", shipment.getCommodity().getName());
+        paramMap.put("QUANTITY", "20 Bales");
+        paramMap.put("GROSS_WEIGHT", "100,236 KGS");
+        //paramMap.put("SEAL_NO", shipment.getBlNo());
+        //paramMap.put("CONTAINERS", shipment.getBlNo());
+        return paramMap;
     }
 
     private Component createFilterHeader(String labelText,
@@ -130,7 +160,6 @@ public class ShowShipmentView extends VerticalLayout {
                                            ShipmentService shipmentService, ScheduleService scheduleService) {
 
         Dialog dialog = new Dialog();
-        boolean newFileUploaded = false;
 
         FormLayout formLayout = new FormLayout();
 
@@ -192,6 +221,11 @@ public class ShowShipmentView extends VerticalLayout {
         scheduleComboBox.setItems(scheduleService.getValidSchedules());
         scheduleComboBox.setItemLabelGenerator(Schedule::getScheduleSummary);
 
+        ComboBox<ShipmentStatus> statusComboBox = new ComboBox<>("Status");
+        statusComboBox.setItems(ShipmentStatus.values());
+        statusComboBox.setItemLabelGenerator(ShipmentStatus::name);
+        statusComboBox.setValue(shipment.getStatus());
+
 //        ComboBox<Commodity> commodities = new ComboBox<>("Commodity");
 //        commodities.setItems(commodityService.getAllCommodity());
 //        commodities.setItemLabelGenerator(Commodity::getCommoditySummary);
@@ -207,6 +241,7 @@ public class ShowShipmentView extends VerticalLayout {
             InputStream inputStream = memoryBuffer.getInputStream();
             try {
                 this.masterBl = inputStream.readAllBytes();
+
             } catch (IOException e) {
                 e.printStackTrace();
                 Util.getNotificationForError("Error: " + e.getMessage()).open();
@@ -227,9 +262,10 @@ public class ShowShipmentView extends VerticalLayout {
             shipment.setShipper(shipper.getValue());
             shipment.setConsignee(consignee.getValue());
             shipment.setNotifyParty(notifyParty.getValue());
-            shipment.setStatus(ShipmentStatus.NEW);
+            shipment.setStatus(statusComboBox.getValue());
             if (this.masterBl != null) {
                 shipment.setMasterBl(masterBl);
+                this.masterBl = null;
             }
            // editedShipment.setCommodity(commodities.getValue());
             shipment.setContainerSize(containerSize.getValue());
