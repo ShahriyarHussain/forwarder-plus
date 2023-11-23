@@ -19,8 +19,8 @@ public class Transshipment {
     private VesselType vesselType;
     private LocalDate portArrival;
     private LocalDate portDeparture;
-    @ManyToOne
-    private Schedule schedule;
-    @OneToOne
-    private Port transshipmentPort;
+//    @ManyToOne
+//    private Schedule schedule;
+//    @OneToOne
+//    private Port transshipmentPort;
 }

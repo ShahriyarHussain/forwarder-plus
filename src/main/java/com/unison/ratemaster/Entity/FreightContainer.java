@@ -1,5 +1,6 @@
 package com.unison.ratemaster.Entity;
 
+import com.unison.ratemaster.Enum.PackageUnit;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -22,7 +23,6 @@ public class FreightContainer {
     @Id
     private String sealNo;
     private BigDecimal grossWeight;
-    private BigDecimal measurement;
     private Long noOfPackages;
-    private String packageUnit;
+    private PackageUnit packageUnit;
 }

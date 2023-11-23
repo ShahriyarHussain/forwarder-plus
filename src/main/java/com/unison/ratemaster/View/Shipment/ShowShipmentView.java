@@ -1,12 +1,14 @@
 package com.unison.ratemaster.View.Shipment;
 
 import com.unison.ratemaster.Entity.Client;
+import com.unison.ratemaster.Entity.Port;
 import com.unison.ratemaster.Entity.Schedule;
 import com.unison.ratemaster.Entity.Shipment;
 import com.unison.ratemaster.Enum.ContainerSize;
 import com.unison.ratemaster.Enum.ContainerType;
 import com.unison.ratemaster.Enum.ShipmentStatus;
 import com.unison.ratemaster.Service.ClientService;
+import com.unison.ratemaster.Service.PortService;
 import com.unison.ratemaster.Service.ScheduleService;
 import com.unison.ratemaster.Service.ShipmentService;
 import com.unison.ratemaster.Util.Util;
@@ -21,6 +23,8 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.contextmenu.GridContextMenu;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -46,6 +50,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 
@@ -56,7 +61,8 @@ public class ShowShipmentView extends VerticalLayout {
 
     public ShowShipmentView(@Autowired ShipmentService shipmentService,
                             @Autowired ClientService clientService,
-                            @Autowired ScheduleService scheduleService) {
+                            @Autowired ScheduleService scheduleService,
+                            @Autowired PortService portService) {
         Grid<Shipment> grid = new Grid<>();
         grid.addColumn(Shipment::getBlNo).setHeader("B/L No.").setSortable(false).setFrozen(true).setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getBooking().getBookingNo()).setHeader("Booking").setAutoWidth(true);
@@ -88,7 +94,7 @@ public class ShowShipmentView extends VerticalLayout {
 
         grid.addComponentColumn(shipment -> {
             Anchor anchor = new Anchor(new StreamResource(shipment.getBooking().getBookingNo() + ".pdf", (InputStreamFactory) () -> {
-                try (FileInputStream stream = new FileInputStream("Reports/shipment_advice.jasper")){
+                try (FileInputStream stream = new FileInputStream("Reports/shipment_advice.jasper")) {
                     final Map<String, Object> parameters = prepareParams(shipment);
                     return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
                 } catch (JRException | IOException e) {
@@ -102,16 +108,28 @@ public class ShowShipmentView extends VerticalLayout {
 
         grid.setItems(shipmentService.getAllShipments());
         GridContextMenu<Shipment> menu = grid.addContextMenu();
-        menu.addItem("Edit", event -> {
+        menu.addItem("Edit Shipment", event -> {
             if (event.getItem().isPresent()) {
                 createEditDialog(event.getItem().get(), clientService, shipmentService, scheduleService).open();
             }
         });
+        menu.addItem("Edit Schedule", event -> {
+            if (event.getItem().isPresent()) {
+                createScheduleEditorDialog(event.getItem().get(), scheduleService, portService, shipmentService).open();
+            }
+        });
+        menu.addItem("Edit Booking", event -> {
+            if (event.getItem().isPresent()) {
+                createScheduleEditorDialog(event.getItem().get(), scheduleService, portService, shipmentService).open();
+            }
+        });
+        menu.add(new Hr());
         menu.addItem("Delete", event -> {
             if (event.getItem().isEmpty()) return;
             shipmentService.deleteShipmentAndBooking(event.getItem().get());
             grid.setItems(shipmentService.getAllShipments());
         });
+
 
         VerticalLayout layout = new VerticalLayout(grid);
         layout.setPadding(false);
@@ -136,7 +154,7 @@ public class ShowShipmentView extends VerticalLayout {
     }
 
     private Component createFilterHeader(String labelText,
-                                                Consumer<String> filterChangeConsumer) {
+                                         Consumer<String> filterChangeConsumer) {
         Label label = new Label(labelText);
         label.getStyle().set("padding-top", "var(--lumo-space-m)")
                 .set("font-size", "var(--lumo-font-size-xs)");
@@ -157,7 +175,7 @@ public class ShowShipmentView extends VerticalLayout {
 
 
     private Dialog createEditDialog(Shipment shipment, ClientService clientService,
-                                           ShipmentService shipmentService, ScheduleService scheduleService) {
+                                    ShipmentService shipmentService, ScheduleService scheduleService) {
 
         Dialog dialog = new Dialog();
 
@@ -267,7 +285,7 @@ public class ShowShipmentView extends VerticalLayout {
                 shipment.setMasterBl(masterBl);
                 this.masterBl = null;
             }
-           // editedShipment.setCommodity(commodities.getValue());
+            // editedShipment.setCommodity(commodities.getValue());
             shipment.setContainerSize(containerSize.getValue());
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
@@ -294,8 +312,8 @@ public class ShowShipmentView extends VerticalLayout {
         formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize, ratePerContainer,
                 stuffingDate, stuffingDepot, scheduleComboBox, goodsDescription, shipperMarks, shipper, consignee, notifyParty, upload);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
-        formLayout.setColspan(goodsDescription,2);
-        formLayout.setColspan(shipperMarks,2);
+        formLayout.setColspan(goodsDescription, 2);
+        formLayout.setColspan(shipperMarks, 2);
 
         Button cancelButton = new Button("Close", e -> dialog.close());
 
@@ -303,6 +321,135 @@ public class ShowShipmentView extends VerticalLayout {
         dialog.getFooter().add(cancelButton);
         dialog.getFooter().add(saveButton);
 
+        return dialog;
+    }
+
+    public Dialog createScheduleEditorDialog(Shipment shipment,
+                                             ScheduleService scheduleService,
+                                             PortService portService,
+                                             ShipmentService shipmentService) {
+
+        Dialog dialog = new Dialog();
+        Schedule schedule;
+        List<Port> portList = portService.getPorts();
+
+        H3 pageTitle = new H3("Create Schedule");
+        if (shipment.getSchedule() != null) {
+            pageTitle = new H3("Edit Schedule");
+            schedule = shipment.getSchedule();
+        } else {
+            schedule = null;
+        }
+        FormLayout formLayout = new FormLayout();
+        formLayout.setMaxWidth("100%");
+
+        TextField feederVesselName = new TextField("Feeder Vessel Name");
+
+        ComboBox<Port> portOfLoading = Util.getPortComboBoxByItemListAndTitle(portList, "Loading Port");
+        DatePicker polEta = new DatePicker(portOfLoading.getLabel() + " ETA");
+        DatePicker polEtd = new DatePicker(portOfLoading.getLabel() + " ETD");
+        portOfLoading.setRequired(true);
+        polEtd.setRequired(true);
+        polEta.setRequired(true);
+        portOfLoading.addValueChangeListener(event -> {
+            if (event != null && event.getValue() != null) {
+                Port vesselPort = event.getValue();
+                polEtd.setLabel("ETD " + vesselPort.getPortShortCode());
+                polEta.setLabel("ETA " + vesselPort.getPortShortCode());
+            }
+        });
+
+
+        TextField motherVesselName = new TextField("Mother Vessel Name");
+        motherVesselName.setRequired(true);
+
+        ComboBox<Port> motherVesselPort = Util.getPortComboBoxByItemListAndTitle(portList, "Mother Vessel Port");
+        DatePicker motherVesselPortEta = new DatePicker("Mother Vessel Port ETA");
+        motherVesselPort.setRequired(true);
+        motherVesselPortEta.setRequired(true);
+        motherVesselPort.addValueChangeListener(event -> {
+            if (event != null && event.getValue() != null) {
+                Port vesselPort = event.getValue();
+                motherVesselPortEta.setLabel("ETA " + vesselPort.getPortShortCode());
+            }
+        });
+
+        ComboBox<Port> tsPort = Util.getPortComboBoxByItemListAndTitle(portList, "Transshipment Port");
+        DatePicker tsPortEta = new DatePicker(tsPort.getLabel() + " ETA");
+        tsPort.addValueChangeListener(event -> {
+            if (event != null && event.getValue() != null) {
+                Port vesselPort = event.getValue();
+                tsPortEta.setLabel("ETA " + vesselPort.getPortCity());
+            }
+        });
+
+        ComboBox<Port> destinationPort = Util.getPortComboBoxByItemListAndTitle(portList, "Destination Port");
+        DatePicker destinationPortEta = new DatePicker(destinationPort.getLabel() + " ETA");
+        destinationPortEta.setRequired(true);
+        destinationPort.setRequired(true);
+        destinationPort.addValueChangeListener(event -> {
+            if (event != null && event.getValue() != null) {
+                Port vesselPort = event.getValue();
+                destinationPortEta.setLabel("ETA " + vesselPort.getPortCity());
+            }
+        });
+
+        Button addButton = new Button("Add");
+
+        if (schedule != null) {
+            feederVesselName.setValue(schedule.getFeederVesselName());
+            portOfLoading.setValue(schedule.getPortOfLoading());
+            polEta.setValue(schedule.getLoadingPortEta());
+            polEtd.setValue(schedule.getLoadingPortEtd());
+
+            motherVesselName.setValue(schedule.getMotherVesselName());
+            motherVesselPort.setValue(schedule.getMotherVesselPort());
+            motherVesselPortEta.setValue(schedule.getMotherVesselPortEta());
+            tsPort.setValue(schedule.getTsPort());
+            tsPortEta.setValue(schedule.getTsPortEta());
+            destinationPort.setValue(schedule.getPortOfDestination());
+            destinationPortEta.setValue(schedule.getDestinationPortEta());
+            addButton.setText("Save");
+        }
+
+        addButton.addClickListener(e -> {
+            Schedule newSchedule = Objects.requireNonNullElseGet(schedule, Schedule::new);
+            newSchedule.setFeederVesselName(feederVesselName.getValue());
+            newSchedule.setPortOfLoading(portOfLoading.getValue());
+            newSchedule.setLoadingPortEta(polEta.getValue());
+            newSchedule.setLoadingPortEtd(polEtd.getValue());
+
+            newSchedule.setMotherVesselName(motherVesselName.getValue());
+            newSchedule.setMotherVesselPort(motherVesselPort.getValue());
+            newSchedule.setMotherVesselPortEta(motherVesselPortEta.getValue());
+
+            newSchedule.setTsPort(tsPort.getValue());
+            newSchedule.setTsPortEta(tsPortEta.getValue());
+
+            newSchedule.setPortOfDestination(destinationPort.getValue());
+            newSchedule.setDestinationPortEta(destinationPortEta.getValue());
+
+            Schedule editedSchedule = scheduleService.saveSchedule(newSchedule);
+
+            shipment.setSchedule(editedSchedule);
+            shipmentService.saveEditedShipment(shipment);
+            if (schedule != null) {
+                Util.getNotificationForSuccess("Schedule Saved!").open();
+            } else {
+                Util.getNotificationForSuccess("Schedule Saved!").open();
+            }
+        });
+
+        formLayout.add(feederVesselName, portOfLoading, polEta, polEtd, motherVesselName,
+                motherVesselPort, motherVesselPortEta, tsPort, tsPortEta, destinationPort, destinationPortEta);
+        formLayout.setColspan(motherVesselName, 2);
+        addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        Button cancelButton = new Button("Close", e -> dialog.close());
+
+        dialog.add(pageTitle, formLayout);
+        dialog.getFooter().add(cancelButton);
+        dialog.getFooter().add(addButton);
+        dialog.setMaxWidth("50%");
         return dialog;
     }
 }

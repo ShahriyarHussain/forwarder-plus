@@ -29,6 +29,7 @@ public class ManagePartyView extends VerticalLayout {
         TextArea address = new TextArea("Address");
         TextField city = new TextField("City");
         TextField country = new TextField("Country");
+        TextField taxId = new TextField("Country");
         TextField postCode = new TextField("Post/Zip Code");
 
         ComboBox<ClientType> partyType = new ComboBox<>("Party Type");
@@ -46,6 +47,7 @@ public class ManagePartyView extends VerticalLayout {
             client.setAddress(address.getValue());
             client.setCountry(country.getValue());
             client.setPostCode(postCode.getValue());
+            client.setTaxId(taxId.getValue());
 
             clientService.saveClient(client);
             Util.getNotificationForSuccess("Client Added!").open();

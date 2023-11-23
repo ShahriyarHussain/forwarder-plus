@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fontFamilies>
+	<fontFamily name="Inter">
+		<normal><![CDATA[fonts/Inter/Inter-Regular.ttf]]></normal>
+		<bold><![CDATA[fonts/Inter/Inter-Bold.ttf]]></bold>
+		<pdfEncoding><![CDATA[Identity-H]]></pdfEncoding>
+		<pdfEmbedded><![CDATA[true]]></pdfEmbedded>
+		<exportFonts/>
+	</fontFamily>
+</fontFamilies>

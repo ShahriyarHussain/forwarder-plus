@@ -13,8 +13,8 @@ import java.util.List;
 public class ScheduleService {
     private final ScheduleRepository scheduleRepository;
 
-    public void saveSchedule(Schedule schedule) {
-        scheduleRepository.save(schedule);
+    public Schedule saveSchedule(Schedule schedule) {
+        return scheduleRepository.save(schedule);
     }
 
     public List<Schedule> getValidSchedules() {

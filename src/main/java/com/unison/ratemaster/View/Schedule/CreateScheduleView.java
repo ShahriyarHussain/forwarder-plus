@@ -3,7 +3,6 @@ package com.unison.ratemaster.View.Schedule;
 import com.unison.ratemaster.Entity.Port;
 import com.unison.ratemaster.Entity.Schedule;
 import com.unison.ratemaster.Entity.Transshipment;
-import com.unison.ratemaster.Enum.VesselType;
 import com.unison.ratemaster.Service.PortService;
 import com.unison.ratemaster.Service.ScheduleService;
 import com.unison.ratemaster.Util.Util;
@@ -34,41 +33,80 @@ public class CreateScheduleView extends VerticalLayout {
         FormLayout formLayout = new FormLayout();
         formLayout.setMaxWidth("50%");
 
-        TextField vesselName = new TextField("Vessel Name");
-        ComboBox<VesselType> vesselType = new ComboBox<>("Vessel Type");
-        vesselType.setItems(VesselType.values());
-
-
-        DatePicker vgmCutOff = new DatePicker("VGM CutOff");
-        DatePicker portCutOff = new DatePicker("Port CutOff");
-        portCutOff.setRequired(true);
-        DatePicker loadingPortETD = new DatePicker("ETD (Loading Port)");
-        loadingPortETD.setRequired(true);
-        DatePicker destinationPortETA = new DatePicker("ETA Destination");
-        destinationPortETA.setRequired(true);
+        TextField feederVesselName = new TextField("Feeder Vessel Name");
 
         List<Port> portList = portService.getPorts();
-        ComboBox<Port> portOfLoading = Util.getPortComboBoxByItemListAndTitle(portList, "Port Of Loading");
-        portOfLoading.setRequired(true);
-        ComboBox<Port> portOfDestination = Util.getPortComboBoxByItemListAndTitle(portList, "Port Of Destination");
-        portOfDestination.setRequired(true);
 
+        ComboBox<Port> portOfLoading = Util.getPortComboBoxByItemListAndTitle(portList, "Loading Port");
+        DatePicker polEta = new DatePicker(portOfLoading.getLabel() + " ETA");
+        DatePicker polEtd = new DatePicker(portOfLoading.getLabel() + " ETD");
+        portOfLoading.setRequired(true);
+        polEtd.setRequired(true);
+        polEta.setRequired(true);
+        portOfLoading.addValueChangeListener(event -> {
+            if (event != null && event.getValue() != null) {
+                Port vesselPort = event.getValue();
+                polEtd.setLabel("ETD " + vesselPort.getPortShortCode());
+                polEta.setLabel("ETA " + vesselPort.getPortShortCode());
+            }
+        });
+
+        TextField motherVesselName = new TextField("Mother Vessel Name");
+        motherVesselName.setRequired(true);
+
+        ComboBox<Port> motherVesselPort = Util.getPortComboBoxByItemListAndTitle(portList, "Mother Vessel Port");
+        DatePicker motherVesselPortEta = new DatePicker("Mother Vessel Port ETA");
+        motherVesselPort.setRequired(true);
+        motherVesselPortEta.setRequired(true);
+        motherVesselPort.addValueChangeListener(event -> {
+            if (event != null && event.getValue() != null) {
+                Port vesselPort = event.getValue();
+                motherVesselPortEta.setLabel("ETA " + vesselPort.getPortShortCode());
+            }
+        });
+
+        ComboBox<Port> tsPort = Util.getPortComboBoxByItemListAndTitle(portList, "Transshipment Port");
+        DatePicker tsPortEta = new DatePicker(tsPort.getLabel() + " ETA");
+        tsPort.addValueChangeListener(event -> {
+            if (event != null && event.getValue() != null) {
+                Port vesselPort = event.getValue();
+                tsPortEta.setLabel("ETA " + vesselPort.getPortName());
+            }
+        });
+
+        ComboBox<Port> destinationPort = Util.getPortComboBoxByItemListAndTitle(portList, "Destination Port");
+        DatePicker destinationPortEta = new DatePicker(destinationPort.getLabel() + " ETA");
+        destinationPortEta.setRequired(true);
+        destinationPort.setRequired(true);
+        destinationPort.addValueChangeListener(event -> {
+            if (event != null && event.getValue() != null) {
+                Port vesselPort = event.getValue();
+                destinationPortEta.setLabel("ETA " + vesselPort.getPortName());
+            }
+        });
 
         Button addButton = new Button("Add", e -> {
             Schedule schedule = new Schedule();
             schedule.setPortOfLoading(portOfLoading.getValue());
-            schedule.setPortOfDestination(portOfDestination.getValue());
-            schedule.setPortCutOff(portCutOff.getValue());
-            if (!vgmCutOff.isEmpty()) {
-                schedule.setVgmCutOff(vgmCutOff.getValue());
-            }
-            schedule.setLoadingPortEtd(loadingPortETD.getValue());
-            schedule.setDestinationPortEta(destinationPortETA.getValue());
+            schedule.setLoadingPortEta(polEta.getValue());
+            schedule.setLoadingPortEtd(polEtd.getValue());
+
+            schedule.setMotherVesselPort(motherVesselPort.getValue());
+            schedule.setMotherVesselPortEta(motherVesselPortEta.getValue());
+
+            schedule.setTsPort(tsPort.getValue());
+            schedule.setTsPortEta(tsPortEta.getValue());
+
+            schedule.setPortOfDestination(destinationPort.getValue());
+            schedule.setDestinationPortEta(destinationPortEta.getValue());
+
             scheduleService.saveSchedule(schedule);
             Util.getNotificationForSuccess("Schedule Added!").open();
         });
 
-        formLayout.add(vesselName, vesselType, portCutOff, vgmCutOff, loadingPortETD, destinationPortETA, portOfLoading, portOfDestination);
+        formLayout.add(feederVesselName, portOfLoading, polEta, polEtd, motherVesselName,
+                motherVesselPort, motherVesselPortEta, tsPort, tsPortEta, destinationPort, destinationPortEta);
+        formLayout.setColspan(motherVesselName, 2);
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         add(pageTitle, formLayout, addButton);
     }

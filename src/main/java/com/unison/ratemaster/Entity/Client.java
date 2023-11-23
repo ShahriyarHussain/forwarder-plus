@@ -25,6 +25,8 @@ public class Client {
     private String address;
     @Length(max = 20)
     private String postCode;
+    @Length(max = 20)
+    private String taxId;
     @Length(max = 500)
     private String city;
     @Length(max = 500)
