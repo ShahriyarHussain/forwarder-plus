@@ -14,7 +14,8 @@ public enum View {
     CREATE_BILL_OF_LADING("Create B/L"),
     ADD_BOOKING("Add Booking"),
     MANAGE_PARTIES("Add Parties"),
-    ADD_OTHERS("Add Others"); //Add others includes Add Carrier, Add Commodity and Add Ports
+    ADD_OTHERS("Add Others"),
+    CREATE_BOOKING("Create Booking");//Add others includes Add Carrier, Add Commodity and Add Ports
 
     private final String viewName;
 }

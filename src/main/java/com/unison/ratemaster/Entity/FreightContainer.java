@@ -23,6 +23,6 @@ public class FreightContainer {
     @Id
     private String sealNo;
     private BigDecimal grossWeight;
-    private Long noOfPackages;
+    private Integer noOfPackages;
     private PackageUnit packageUnit;
 }

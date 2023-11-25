@@ -1,5 +1,6 @@
 package com.unison.ratemaster.Entity;
 
+import com.unison.ratemaster.Enum.ContainerSize;
 import com.unison.ratemaster.Enum.ContainerType;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,6 +25,7 @@ public class Booking {
     private String invoiceNo;
     private Integer numOfContainers;
     private ContainerType containerType;
+    private ContainerSize containerSize;
     @OneToMany(mappedBy = "bookingNo", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
     private Set<FreightContainer> container;
     private LocalDate stuffingDate;

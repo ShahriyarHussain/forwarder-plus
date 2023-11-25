@@ -2,6 +2,7 @@ package com.unison.ratemaster.View;
 
 import com.unison.ratemaster.Enum.View;
 import com.unison.ratemaster.View.BillOfLading.CreateBLView;
+import com.unison.ratemaster.View.Booking.CreateBookingView;
 import com.unison.ratemaster.View.Client.ManagePartyView;
 import com.unison.ratemaster.View.Rate.CreateRateView;
 import com.unison.ratemaster.View.Rate.ShowRateView;
@@ -20,6 +21,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
 import org.springframework.beans.factory.annotation.Value;
+
 
 @PageTitle("Main")
 @Route(value = "home")
@@ -49,6 +51,7 @@ public class MainView extends AppLayout {
                 createTab(VaadinIcon.PENCIL, View.CREATE_BILL_OF_LADING),
                 createTab(VaadinIcon.PENCIL, View.CREATE_SHIPMENT),
                 createTab(VaadinIcon.LIST, View.VIEW_SHIPMENT),
+                createTab(VaadinIcon.PENCIL, View.CREATE_BOOKING),
                 createTab(VaadinIcon.PENCIL, View.MANAGE_PARTIES),
                 createTab(VaadinIcon.LIST, View.VIEW_RATE));
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
@@ -79,6 +82,9 @@ public class MainView extends AppLayout {
                 break;
             case VIEW_SHIPMENT:
                 link.setRoute(ShowShipmentView.class);
+                break;
+            case CREATE_BOOKING:
+                link.setRoute(CreateBookingView.class);
                 break;
             case MANAGE_PARTIES:
                 link.setRoute(ManagePartyView.class);
