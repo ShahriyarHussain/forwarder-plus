@@ -10,6 +10,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
@@ -26,9 +27,10 @@ public class Booking {
     private Integer numOfContainers;
     private ContainerType containerType;
     private ContainerSize containerSize;
-    @OneToMany(mappedBy = "bookingNo", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "bookingNo", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     private Set<FreightContainer> container;
     private LocalDate stuffingDate;
     private String stuffingDepot;
     private BigDecimal stuffingCostPerContainer;
+    private LocalDateTime enteredOn;
 }

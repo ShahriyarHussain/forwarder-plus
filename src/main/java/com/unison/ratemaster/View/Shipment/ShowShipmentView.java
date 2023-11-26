@@ -1,19 +1,15 @@
 package com.unison.ratemaster.View.Shipment;
 
-import com.unison.ratemaster.Entity.Client;
-import com.unison.ratemaster.Entity.Port;
-import com.unison.ratemaster.Entity.Schedule;
-import com.unison.ratemaster.Entity.Shipment;
+import com.unison.ratemaster.Entity.*;
 import com.unison.ratemaster.Enum.ContainerSize;
 import com.unison.ratemaster.Enum.ContainerType;
+import com.unison.ratemaster.Enum.PackageUnit;
 import com.unison.ratemaster.Enum.ShipmentStatus;
-import com.unison.ratemaster.Service.ClientService;
-import com.unison.ratemaster.Service.PortService;
-import com.unison.ratemaster.Service.ScheduleService;
-import com.unison.ratemaster.Service.ShipmentService;
+import com.unison.ratemaster.Service.*;
 import com.unison.ratemaster.Util.Util;
 import com.unison.ratemaster.View.MainView;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -22,10 +18,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.contextmenu.GridContextMenu;
-import com.vaadin.flow.component.html.Anchor;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Hr;
-import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -47,10 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 
 
@@ -62,7 +52,8 @@ public class ShowShipmentView extends VerticalLayout {
     public ShowShipmentView(@Autowired ShipmentService shipmentService,
                             @Autowired ClientService clientService,
                             @Autowired ScheduleService scheduleService,
-                            @Autowired PortService portService) {
+                            @Autowired PortService portService,
+                            @Autowired BookingService bookingService) {
         Grid<Shipment> grid = new Grid<>();
         grid.addColumn(Shipment::getBlNo).setHeader("B/L No.").setSortable(false).setFrozen(true).setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getBooking().getBookingNo()).setHeader("Booking").setAutoWidth(true);
@@ -120,7 +111,7 @@ public class ShowShipmentView extends VerticalLayout {
         });
         menu.addItem("Edit Booking", event -> {
             if (event.getItem().isPresent()) {
-                createScheduleEditorDialog(event.getItem().get(), scheduleService, portService, shipmentService).open();
+                createBookingEditorDialog(event.getItem().get(), bookingService).open();
             }
         });
         menu.add(new Hr());
@@ -244,11 +235,6 @@ public class ShowShipmentView extends VerticalLayout {
         statusComboBox.setItemLabelGenerator(ShipmentStatus::name);
         statusComboBox.setValue(shipment.getStatus());
 
-//        ComboBox<Commodity> commodities = new ComboBox<>("Commodity");
-//        commodities.setItems(commodityService.getAllCommodity());
-//        commodities.setItemLabelGenerator(Commodity::getCommoditySummary);
-//        byte[] masterBl;
-
         MemoryBuffer memoryBuffer = new MemoryBuffer();
         Upload upload = new Upload(memoryBuffer);
         upload.setDropAllowed(true);
@@ -324,10 +310,123 @@ public class ShowShipmentView extends VerticalLayout {
         return dialog;
     }
 
-    public Dialog createScheduleEditorDialog(Shipment shipment,
-                                             ScheduleService scheduleService,
-                                             PortService portService,
-                                             ShipmentService shipmentService) {
+    public Dialog createBookingEditorDialog(Shipment shipment, BookingService bookingService) {
+        Dialog dialog = new Dialog();
+
+        Booking booking = shipment.getBooking();
+        Set<FreightContainer> containerList = booking.getContainer();
+
+        H2 title = new H2("Create Booking");
+
+        TextField bookingNo = new TextField("Booking No");
+        bookingNo.setValue(booking.getBookingNo());
+
+        Button addButton = new Button("Add");
+        bookingNo.setValueChangeMode(ValueChangeMode.EAGER);
+        bookingNo.addValueChangeListener(event -> {
+            if (event.getSource().getValue() != null && !event.getSource().getValue().isEmpty()) {
+                addButton.setEnabled(true);
+            }
+        });
+        TextField invoiceNo = new TextField("Invoice No");
+        invoiceNo.setValue(booking.getInvoiceNo());
+
+        ComboBox<ContainerType> containerType = new ComboBox<>("Container Type");
+        containerType.setItems(ContainerType.values());
+        if (booking.getContainerType() != null) {
+            containerType.setValue(booking.getContainerType());
+        }
+
+        IntegerField numOfCont = new IntegerField("Num Of Containers");
+        numOfCont.setValue(booking.getNumOfContainers());
+
+        ComboBox<ContainerSize> containerSize = new ComboBox<>("Container Size");
+        containerSize.setItems(ContainerSize.values());
+        containerSize.setValue(booking.getContainerSize());
+
+        DatePicker stuffingDate = new DatePicker("Stuffing Date");
+        stuffingDate.setValue(booking.getStuffingDate());
+
+        TextField stuffingDepot = new TextField("Stuffing Depot");
+        stuffingDepot.setValue(booking.getStuffingDepot());
+
+        BigDecimalField stuffingCost = new BigDecimalField("Stuffing Cost/Container");
+        stuffingCost.setValue(booking.getStuffingCostPerContainer());
+
+        Grid<FreightContainer> containerGrid = new Grid<>();
+        containerGrid.setItems(containerList);
+        containerGrid.addColumn(FreightContainer::getContainerNo).setHeader("Container No");
+        containerGrid.addColumn(FreightContainer::getSealNo).setHeader("Seal No");
+        containerGrid.addColumn(FreightContainer::getGrossWeight).setHeader("Gross Weight");
+        containerGrid.addColumn(FreightContainer::getNoOfPackages).setHeader("Packages");
+        containerGrid.addColumn(FreightContainer::getPackageUnit).setHeader("Packaging Unit");
+        containerGrid.addComponentColumn(freightContainer ->
+                new Button(new Icon(VaadinIcon.TRASH), event -> {
+                    containerList.remove(freightContainer);
+                    containerGrid.setVisible(!containerList.isEmpty());
+                    containerGrid.setItems(containerList);
+                }));
+        containerGrid.setMaxHeight(20, Unit.EM);
+        containerGrid.setVisible(!containerList.isEmpty());
+        containerGrid.setItems(containerList);
+
+        TextField containerNo = new TextField("Container No.");
+        TextField sealNo = new TextField("Seal No.");
+        BigDecimalField grossWeight = new BigDecimalField("Gross Weight");
+        IntegerField noOfPackages = new IntegerField("No Packages");
+        ComboBox<PackageUnit> packageUnitComboBox = new ComboBox<>("Package Unit");
+        packageUnitComboBox.setItems(PackageUnit.values());
+        addButton.setMaxWidth(1, Unit.EM);
+        addButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+        addButton.addClickListener(event -> {
+            FreightContainer container = new FreightContainer();
+            container.setBookingNo(bookingNo.getValue());
+            container.setContainerNo(containerNo.getValue());
+            container.setSealNo(sealNo.getValue());
+            container.setNoOfPackages(noOfPackages.getValue());
+            container.setGrossWeight(grossWeight.getValue());
+            container.setPackageUnit(packageUnitComboBox.getValue());
+            containerList.add(container);
+            containerGrid.setVisible(true);
+            containerGrid.setItems(containerList);
+        });
+        addButton.setEnabled(bookingNo.getValue() != null && !bookingNo.getValue().isEmpty());
+
+        Button saveButton = new Button("Save Booking");
+        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        saveButton.addClickListener(event -> {
+            booking.setBookingNo(bookingNo.getValue());
+            booking.setContainerType(containerType.getValue());
+            booking.setInvoiceNo(invoiceNo.getValue());
+            booking.setStuffingDate(stuffingDate.getValue());
+            booking.setStuffingDepot(stuffingDepot.getValue());
+            booking.setNumOfContainers(numOfCont.getValue());
+            booking.setStuffingCostPerContainer(stuffingCost.getValue());
+            booking.setContainerSize(containerSize.getValue());
+            booking.setContainer(containerList);
+            booking.setEnteredOn(LocalDateTime.now());
+            bookingService.saveBooking(booking);
+            Util.getNotificationForSuccess("Booking Saved Successfully").open();
+        });
+
+        Hr line = new Hr();
+        line.setHeight("5px");
+        line.setClassName("style=background-color:black");
+
+        FormLayout formLayout = new FormLayout();
+        formLayout.add(bookingNo, invoiceNo, containerType, numOfCont, containerSize, stuffingDate, stuffingCost, stuffingDepot,
+                line, containerNo, sealNo, grossWeight, noOfPackages, packageUnitComboBox, addButton, containerGrid);
+        formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 3));
+        formLayout.setColspan(line, 4);
+        formLayout.setColspan(containerGrid, 4);
+        dialog.add(title, formLayout);
+        dialog.getFooter().add(saveButton);
+        dialog.getFooter().add(new Button("Close", event -> dialog.close()));
+        return dialog;
+    }
+
+    public Dialog createScheduleEditorDialog(Shipment shipment,ScheduleService scheduleService,
+                                             PortService portService, ShipmentService shipmentService) {
 
         Dialog dialog = new Dialog();
         Schedule schedule;

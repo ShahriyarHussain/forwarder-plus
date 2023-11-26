@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -19,5 +20,9 @@ public class BookingService {
     public Booking saveBooking(Booking booking) {
         freightContainerRepository.saveAll(booking.getContainer());
         return bookingRepository.save(booking);
+    }
+
+    public List<Booking> getLatestBooking() {
+        return bookingRepository.getLatestBookings();
     }
 }

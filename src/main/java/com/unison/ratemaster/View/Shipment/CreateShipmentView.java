@@ -4,10 +4,7 @@ import com.unison.ratemaster.Entity.*;
 import com.unison.ratemaster.Enum.ContainerSize;
 import com.unison.ratemaster.Enum.ContainerType;
 import com.unison.ratemaster.Enum.ShipmentStatus;
-import com.unison.ratemaster.Service.ClientService;
-import com.unison.ratemaster.Service.CommodityService;
-import com.unison.ratemaster.Service.ScheduleService;
-import com.unison.ratemaster.Service.ShipmentService;
+import com.unison.ratemaster.Service.*;
 import com.unison.ratemaster.Util.Util;
 import com.unison.ratemaster.View.MainView;
 import com.vaadin.flow.component.button.Button;
@@ -35,15 +32,21 @@ import java.util.List;
 public class CreateShipmentView extends VerticalLayout {
 
     byte[] masterBl;
+    Booking booking;
 
     public CreateShipmentView(@Autowired ShipmentService shipmentService,
                               @Autowired ClientService clientService,
                               @Autowired ScheduleService scheduleService,
-                              @Autowired CommodityService commodityService) {
+                              @Autowired CommodityService commodityService,
+                              @Autowired BookingService bookingService) {
 
         H2 title = new H2("Create Shipment");
 
-        FormLayout formLayout = new FormLayout();
+        ComboBox<Booking> bookings = new ComboBox<>("Choose Booking");
+        bookings.setItems(bookingService.getLatestBooking());
+        bookings.setItemLabelGenerator(booking -> booking.getBookingNo() + "-"
+                + booking.getNumOfContainers() + " x " + booking.getContainerSize().getContainerSize());
+        bookings.setWidthFull();
 
         TextField name = new TextField("Shipment Name");
         name.setRequired(true);
@@ -89,6 +92,19 @@ public class CreateShipmentView extends VerticalLayout {
         commodities.setItems(commodityService.getAllCommodity());
         commodities.setItemLabelGenerator(Commodity::getCommoditySummary);
 
+        bookings.addValueChangeListener(event -> {
+            this.booking = event.getSource().getValue();
+            if (this.booking != null) {
+                bookingNo.setValue(this.booking.getBookingNo());
+                containerType.setValue(this.booking.getContainerType());
+                invoiceNo.setValue(this.booking.getInvoiceNo());
+                stuffingDate.setValue(this.booking.getStuffingDate());
+                stuffingDepot.setValue(this.booking.getStuffingDepot());
+                numOfContainers.setValue(this.booking.getNumOfContainers());
+                ratePerContainer.setValue(this.booking.getStuffingCostPerContainer());
+            }
+        });
+
         Upload upload = getUploadComponent();
 
         Button saveButton = new Button("Save", event -> {
@@ -110,7 +126,13 @@ public class CreateShipmentView extends VerticalLayout {
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
 
-            Booking booking = new Booking();
+
+            if (bookings.getValue() == null) {
+                this.booking = new Booking();
+            } else {
+                this.booking = bookings.getValue();
+            }
+
             booking.setBookingNo(bookingNo.getValue());
             booking.setContainerType(containerType.getValue());
             booking.setInvoiceNo(invoiceNo.getValue());
@@ -127,8 +149,9 @@ public class CreateShipmentView extends VerticalLayout {
                 Util.getNotificationForError("Unexpected Error: " + e.getMessage()).open();
             }
         });
-
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        FormLayout formLayout = new FormLayout();
         formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize, ratePerContainer,
                 stuffingDate, stuffingDepot, commodities, scheduleComboBox, goodsDescription, shipperMarks,
                 shipper, consignee, notifyParty, upload);
@@ -136,7 +159,7 @@ public class CreateShipmentView extends VerticalLayout {
         formLayout.setColspan(goodsDescription,2);
         formLayout.setColspan(shipperMarks,2);
 
-        add(title, formLayout, saveButton);
+        add(title, bookings, formLayout, saveButton);
     }
 
     private Upload getUploadComponent() {
@@ -147,7 +170,7 @@ public class CreateShipmentView extends VerticalLayout {
         upload.setMaxFiles(1);
 
         upload.addSucceededListener(event -> {
-            String fileName = event.getFileName();
+            //String fileName = event.getFileName();
             InputStream inputStream = memoryBuffer.getInputStream();
             try {
                 this.masterBl = inputStream.readAllBytes();

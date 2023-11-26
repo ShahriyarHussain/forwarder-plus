@@ -15,7 +15,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -27,6 +27,7 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,7 +37,7 @@ public class CreateBookingView extends VerticalLayout {
     private final Set<FreightContainer> containerList = new HashSet<>();
 
     public CreateBookingView(@Autowired BookingService bookingService) {
-        H3 title = new H3("Create Booking");
+        H2 title = new H2("Create Booking");
 
         TextField bookingNo = new TextField("Booking No");
         Button addButton = new Button("Add");
@@ -108,6 +109,7 @@ public class CreateBookingView extends VerticalLayout {
             booking.setStuffingCostPerContainer(stuffingCost.getValue());
             booking.setContainerSize(containerSize.getValue());
             booking.setContainer(containerList);
+            booking.setEnteredOn(LocalDateTime.now());
             bookingService.saveBooking(booking);
             Util.getNotificationForSuccess("Booking Saved Successfully").open();
         });
