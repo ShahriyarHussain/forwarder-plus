@@ -21,4 +21,6 @@ public class ClientService {
         return clientRepository.findAll();
     }
 
+    public void deleteClient(Client client) { clientRepository.delete(client);}
+
 }

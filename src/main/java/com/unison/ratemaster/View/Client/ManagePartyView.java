@@ -5,11 +5,15 @@ import com.unison.ratemaster.Enum.ClientType;
 import com.unison.ratemaster.Service.ClientService;
 import com.unison.ratemaster.Util.Util;
 import com.unison.ratemaster.View.MainView;
+import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -20,7 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class ManagePartyView extends VerticalLayout {
 
     public ManagePartyView(@Autowired ClientService clientService) {
-        H3 title = new H3("Manage Parties");
+        H2 title = new H2("Manage Parties");
 
         FormLayout formLayout = new FormLayout();
         formLayout.setMaxWidth("50%");
@@ -39,10 +43,27 @@ public class ManagePartyView extends VerticalLayout {
         partyType.setRequired(true);
         partyType.setRequiredIndicatorVisible(true);
 
+        Grid<Client> clientGrid = new Grid<>();
+        clientGrid.addColumn(Client::getName).setHeader("Name").setAutoWidth(true);
+        clientGrid.addColumn(Client::getType).setHeader("Type");
+        clientGrid.addColumn(Client::getCountry).setHeader("Country");
+        clientGrid.addColumn(Client::getTaxId).setHeader("Tax ID");
+        clientGrid.addComponentColumn(client -> {
+            Button button = new Button(new Icon(VaadinIcon.TRASH), event -> {
+                clientService.deleteClient(client);
+                clientGrid.setItems(clientService.getAllClients());
+            });
+            button.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            return button;
+        }).setHeader("Delete");
+        clientGrid.setMaxHeight(20, Unit.EM);
+        clientGrid.setItems(clientService.getAllClients());
+
 
         Button addButton = new Button("Add", e -> {
             Client client = new Client();
             client.setName(partyName.getValue());
+            client.setType(partyType.getValue());
             client.setCity(city.getValue());
             client.setAddress(address.getValue());
             client.setCountry(country.getValue());
@@ -51,11 +72,13 @@ public class ManagePartyView extends VerticalLayout {
 
             clientService.saveClient(client);
             Util.getNotificationForSuccess("Client Added!").open();
+            clientGrid.setItems(clientService.getAllClients());
         });
 
         formLayout.add(partyName, partyType, address, city, country, postCode);
         formLayout.setColspan(address, 2);
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        add(title, formLayout, addButton);
+
+        add(title, formLayout, addButton, clientGrid);
     }
 }

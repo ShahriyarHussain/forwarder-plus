@@ -7,6 +7,7 @@ import com.unison.ratemaster.Service.RateService;
 import com.unison.ratemaster.View.MainView;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class ShowRateView extends VerticalLayout {
 
     public ShowRateView(@Autowired PortService portService, @Autowired RateService rateService) {
+        H2 title = new H2("View Rates");
         Grid<Rate> grid = new Grid<>();
         grid.addColumn(rate -> rate.getPortOfLoading().getPortShortCode(), "pol").setHeader("POL")
                 .setTooltipGenerator(rate -> rate.getPortOfLoading().getPortCity() +", "+ rate.getPortOfLoading().getPortCountry());
@@ -29,7 +31,7 @@ public class ShowRateView extends VerticalLayout {
         grid.addColumn(Rate::getTerm, "term").setHeader("Term").setSortable(false);
         grid.addColumn(Rate::getTwentyFtRate, "rate20").setHeader("20' Rate");
         grid.addColumn(Rate::getFortyFtRate, "rate40").setHeader("40' Rate");
-        grid.addColumn(Rate::getTwentyFtRate, "rate40h").setHeader("40' HC Rate");
+        grid.addColumn(Rate::getFortyFtHQRate, "rate40h").setHeader("40' HC Rate");
         grid.addColumn(Rate::getValidity, "validity").setHeader("Validity");
         grid.addColumn(Rate::getRemarks, "remarks").setHeader("Remarks").setSortable(false);
         GridListDataView<Rate> dataView = grid.setItems(rateService.getValidRates());
@@ -51,7 +53,7 @@ public class ShowRateView extends VerticalLayout {
 
         VerticalLayout layout = new VerticalLayout(searchField, grid);
         layout.setPadding(false);
-        add(layout);
+        add(title, layout);
     }
 
     private boolean searchTermMatchesFilterFields(String searchTerm, Rate rate) {

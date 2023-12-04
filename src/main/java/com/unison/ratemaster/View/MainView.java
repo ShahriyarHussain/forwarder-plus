@@ -47,13 +47,11 @@ public class MainView extends AppLayout {
     private Tabs getTabs() {
         Tabs tabs = new Tabs();
         tabs.add(createTab(VaadinIcon.PENCIL, View.CREATE_RATE),
-                createTab(VaadinIcon.PENCIL, View.SCHEDULE_PANEL),
-                createTab(VaadinIcon.PENCIL, View.CREATE_BILL_OF_LADING),
+                createTab(VaadinIcon.LIST, View.VIEW_RATE),
                 createTab(VaadinIcon.PENCIL, View.CREATE_SHIPMENT),
                 createTab(VaadinIcon.LIST, View.VIEW_SHIPMENT),
-                createTab(VaadinIcon.PENCIL, View.CREATE_BOOKING),
-                createTab(VaadinIcon.PENCIL, View.MANAGE_PARTIES),
-                createTab(VaadinIcon.LIST, View.VIEW_RATE));
+                createTab(VaadinIcon.PENCIL, View.CREATE_BILL_OF_LADING),
+                createTab(VaadinIcon.PENCIL, View.MANAGE_PARTIES));
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
         return tabs;
     }

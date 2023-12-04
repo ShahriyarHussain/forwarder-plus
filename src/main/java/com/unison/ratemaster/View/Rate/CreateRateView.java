@@ -11,7 +11,9 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.BigDecimalField;
@@ -32,7 +34,7 @@ public class CreateRateView extends VerticalLayout {
                           @Autowired CarrierService carrierService,
                           @Autowired CommodityService commodityService,
                           @Autowired ScheduleService scheduleService) {
-        H3 pageTitle = new H3("Create Rate");
+        H2 pageTitle = new H2("Create Rate");
 
         // Entry form section
         FormLayout formLayout = new FormLayout();
@@ -76,33 +78,22 @@ public class CreateRateView extends VerticalLayout {
         DatePicker validity = new DatePicker("Validity");
 
         TextArea factoryLocation = new TextArea("Factory Location");
-        factoryLocation.setHeight(5, Unit.EM);
+        factoryLocation.setHeight(10, Unit.EM);
         factoryLocation.setMaxLength(500);
         factoryLocation.setValueChangeMode(ValueChangeMode.EAGER);
         factoryLocation.addValueChangeListener(e -> e.getSource().setHelperText(e.getValue().length() + "/" + 500));
 
         TextArea remarks = new TextArea("Remarks");
-        remarks.setHeight(5, Unit.EM);
+        remarks.setHeight(10, Unit.EM);
         remarks.setMaxLength(200);
         remarks.setValueChangeMode(ValueChangeMode.EAGER);
         remarks.addValueChangeListener(e -> e.getSource().setHelperText(e.getValue().length() + "/" + 200));
 
-        List<Schedule> scheduleList = scheduleService.getValidSchedules();
-
-        ComboBox<Schedule> scheduleComboBox  = new ComboBox<>("Tag Existing Schedule:");
-        scheduleComboBox.setItems(scheduleList);
-        scheduleComboBox.setItemLabelGenerator(Schedule::getScheduleSummary);
-        scheduleComboBox.setRequired(true);
-        scheduleComboBox.setRequiredIndicatorVisible(true);
-
-        /// SAVE SCHEDULE
-
         formLayout.add(portOfLoading, portOfDestination, commodityComboBox, carrierComboBox, twentyFtRate, fortyFtRate,
-                fortyHQRate, exwRate, validity, term, factoryLocation, remarks, scheduleComboBox);
+                fortyHQRate, exwRate, validity, term, new Hr(), factoryLocation, remarks);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
         formLayout.setColspan(remarks,2);
-//        formLayout.setColspan(scheduleComboBox,2);
-        // Form section end
+        formLayout.setColspan(factoryLocation,2);
 
         Button saveButton = new Button("Save Rate", event -> {
             Rate rate = new Rate();

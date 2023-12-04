@@ -4,10 +4,7 @@ import com.unison.ratemaster.Enum.PackageUnit;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.IdClass;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.math.BigDecimal;
 
 @Entity
@@ -17,7 +14,7 @@ import java.math.BigDecimal;
 @IdClass(FreightContainerId.class)
 public class FreightContainer {
     @Id
-    private String bookingNo;
+    private Long bookingId;
     @Id
     private String containerNo;
     @Id
@@ -25,4 +22,7 @@ public class FreightContainer {
     private BigDecimal grossWeight;
     private Integer noOfPackages;
     private PackageUnit packageUnit;
+    @ManyToOne
+    @JoinColumn(name = "bookingId", insertable = false, updatable = false)
+    private Booking booking;
 }

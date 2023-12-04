@@ -51,19 +51,24 @@ public class CreateScheduleView extends VerticalLayout {
             }
         });
 
+
         TextField motherVesselName = new TextField("Mother Vessel Name");
         motherVesselName.setRequired(true);
 
         ComboBox<Port> motherVesselPort = Util.getPortComboBoxByItemListAndTitle(portList, "Mother Vessel Port");
         DatePicker motherVesselPortEta = new DatePicker("Mother Vessel Port ETA");
+        DatePicker mvPortEta = new DatePicker("Feeder Connect ETA");
         motherVesselPort.setRequired(true);
         motherVesselPortEta.setRequired(true);
         motherVesselPort.addValueChangeListener(event -> {
             if (event != null && event.getValue() != null) {
                 Port vesselPort = event.getValue();
                 motherVesselPortEta.setLabel("ETA " + vesselPort.getPortShortCode());
+                mvPortEta.setLabel("ETA " + vesselPort.getPortShortCode());
             }
         });
+
+
 
         ComboBox<Port> tsPort = Util.getPortComboBoxByItemListAndTitle(portList, "Transshipment Port");
         DatePicker tsPortEta = new DatePicker(tsPort.getLabel() + " ETA");
@@ -90,6 +95,7 @@ public class CreateScheduleView extends VerticalLayout {
             schedule.setPortOfLoading(portOfLoading.getValue());
             schedule.setLoadingPortEta(polEta.getValue());
             schedule.setLoadingPortEtd(polEtd.getValue());
+            schedule.setMvPortFeederEta(mvPortEta.getValue());
 
             schedule.setMotherVesselPort(motherVesselPort.getValue());
             schedule.setMotherVesselPortEta(motherVesselPortEta.getValue());
@@ -104,9 +110,8 @@ public class CreateScheduleView extends VerticalLayout {
             Util.getNotificationForSuccess("Schedule Added!").open();
         });
 
-        formLayout.add(feederVesselName, portOfLoading, polEta, polEtd, motherVesselName,
-                motherVesselPort, motherVesselPortEta, tsPort, tsPortEta, destinationPort, destinationPortEta);
-        formLayout.setColspan(motherVesselName, 2);
+        formLayout.add(feederVesselName, motherVesselName, portOfLoading, motherVesselPort, polEta, motherVesselPortEta,
+                polEtd, mvPortEta, tsPort, tsPortEta, destinationPort, destinationPortEta);
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         add(pageTitle, formLayout, addButton);
     }

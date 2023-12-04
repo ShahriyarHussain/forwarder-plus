@@ -7,6 +7,7 @@ import com.unison.ratemaster.Enum.ShipmentStatus;
 import com.unison.ratemaster.Service.*;
 import com.unison.ratemaster.Util.Util;
 import com.unison.ratemaster.View.MainView;
+import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -25,14 +26,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 
 @Route(value = "create-shipment", layout = MainView.class)
 public class CreateShipmentView extends VerticalLayout {
 
     byte[] masterBl;
-    Booking booking;
 
     public CreateShipmentView(@Autowired ShipmentService shipmentService,
                               @Autowired ClientService clientService,
@@ -42,18 +44,20 @@ public class CreateShipmentView extends VerticalLayout {
 
         H2 title = new H2("Create Shipment");
 
-        ComboBox<Booking> bookings = new ComboBox<>("Choose Booking");
-        bookings.setItems(bookingService.getLatestBooking());
-        bookings.setItemLabelGenerator(booking -> booking.getBookingNo() + "-"
-                + booking.getNumOfContainers() + " x " + booking.getContainerSize().getContainerSize());
-        bookings.setWidthFull();
+//        ComboBox<Booking> bookings = new ComboBox<>("Choose Booking");
+//        bookings.setItems(bookingService.getLatestBooking());
+//        bookings.setItemLabelGenerator(booking -> booking.getBookingNo() + "-"
+//                + booking.getNumOfContainers() + " x " + booking.getContainerSize().getContainerSize());
+//        bookings.setWidthFull();
 
         TextField name = new TextField("Shipment Name");
         name.setRequired(true);
 
         TextField blNo = new TextField("B/L No");
         TextArea goodsDescription = new TextArea("Goods Description");
+        goodsDescription.setHeight(10, Unit.EM);
         TextArea shipperMarks = new TextArea("Shipper Marks");
+        shipperMarks.setHeight(10, Unit.EM);
 
         TextField bookingNo = new TextField("Booking No");
         TextField invoiceNo = new TextField("Invoice No");
@@ -92,18 +96,18 @@ public class CreateShipmentView extends VerticalLayout {
         commodities.setItems(commodityService.getAllCommodity());
         commodities.setItemLabelGenerator(Commodity::getCommoditySummary);
 
-        bookings.addValueChangeListener(event -> {
-            this.booking = event.getSource().getValue();
-            if (this.booking != null) {
-                bookingNo.setValue(this.booking.getBookingNo());
-                containerType.setValue(this.booking.getContainerType());
-                invoiceNo.setValue(this.booking.getInvoiceNo());
-                stuffingDate.setValue(this.booking.getStuffingDate());
-                stuffingDepot.setValue(this.booking.getStuffingDepot());
-                numOfContainers.setValue(this.booking.getNumOfContainers());
-                ratePerContainer.setValue(this.booking.getStuffingCostPerContainer());
-            }
-        });
+//        bookings.addValueChangeListener(event -> {
+//            this.booking = event.getSource().getValue();
+//            if (this.booking != null) {
+//                bookingNo.setValue(this.booking.getBookingNo());
+//                containerType.setValue(this.booking.getContainerType());
+//                invoiceNo.setValue(this.booking.getInvoiceNo());
+//                stuffingDate.setValue(this.booking.getStuffingDate());
+//                stuffingDepot.setValue(this.booking.getStuffingDepot());
+//                numOfContainers.setValue(this.booking.getNumOfContainers());
+//                ratePerContainer.setValue(this.booking.getStuffingCostPerContainer());
+//            }
+//        });
 
         Upload upload = getUploadComponent();
 
@@ -111,7 +115,6 @@ public class CreateShipmentView extends VerticalLayout {
             Shipment shipment = new Shipment();
             shipment.setName(name.getValue());
             shipment.setBlNo(blNo.getValue());
-            shipment.setNumberOfContainer(numOfContainers.getValue());
             shipment.setInvoiceNo(invoiceNo.getValue());
             shipment.setGoodsDescription(goodsDescription.getValue());
             shipment.setShipperMarks(shipperMarks.getValue());
@@ -121,25 +124,23 @@ public class CreateShipmentView extends VerticalLayout {
             shipment.setStatus(ShipmentStatus.NEW);
             shipment.setMasterBl(this.masterBl);
             shipment.setCommodity(commodities.getValue());
-            shipment.setContainerSize(containerSize.getValue());
             shipment.setMasterBl(this.masterBl);
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
 
-
-            if (bookings.getValue() == null) {
-                this.booking = new Booking();
-            } else {
-                this.booking = bookings.getValue();
-            }
-
+            Booking booking = new Booking();
             booking.setBookingNo(bookingNo.getValue());
+            booking.setNumOfContainers(numOfContainers.getValue());
             booking.setContainerType(containerType.getValue());
             booking.setInvoiceNo(invoiceNo.getValue());
+            booking.setStuffingCostPerContainer(BigDecimal.ZERO);
             booking.setStuffingDate(stuffingDate.getValue());
             booking.setStuffingDepot(stuffingDepot.getValue());
             booking.setNumOfContainers(numOfContainers.getValue());
+            booking.setContainerSize(containerSize.getValue());
             booking.setStuffingCostPerContainer(ratePerContainer.getValue());
+            booking.setContainer(new HashSet<>());
+            booking.setEnteredOn(LocalDateTime.now());
 
             try {
                 shipmentService.createNewShipment(shipment, booking);
@@ -153,13 +154,13 @@ public class CreateShipmentView extends VerticalLayout {
 
         FormLayout formLayout = new FormLayout();
         formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize, ratePerContainer,
-                stuffingDate, stuffingDepot, commodities, scheduleComboBox, goodsDescription, shipperMarks,
-                shipper, consignee, notifyParty, upload);
+                stuffingDate, stuffingDepot, commodities, scheduleComboBox, shipper, consignee, notifyParty, upload,
+                goodsDescription, shipperMarks);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
         formLayout.setColspan(goodsDescription,2);
         formLayout.setColspan(shipperMarks,2);
 
-        add(title, bookings, formLayout, saveButton);
+        add(title, formLayout, saveButton);
     }
 
     private Upload getUploadComponent() {

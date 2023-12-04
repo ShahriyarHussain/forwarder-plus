@@ -4,10 +4,8 @@ import com.unison.ratemaster.Enum.ContainerSize;
 import com.unison.ratemaster.Enum.ContainerType;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.validator.constraints.Length;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotEmpty;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,15 +17,14 @@ import java.util.Set;
 @Table(name = "BOOKING")
 public class Booking {
     @Id
-    @NotEmpty
-    @Length(max = 50)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long bookingId;
     private String bookingNo;
-    @Length(max = 50)
     private String invoiceNo;
     private Integer numOfContainers;
     private ContainerType containerType;
     private ContainerSize containerSize;
-    @OneToMany(mappedBy = "bookingNo", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "bookingId", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     private Set<FreightContainer> container;
     private LocalDate stuffingDate;
     private String stuffingDepot;

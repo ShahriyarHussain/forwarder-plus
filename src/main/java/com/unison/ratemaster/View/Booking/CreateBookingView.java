@@ -83,7 +83,6 @@ public class CreateBookingView extends VerticalLayout {
         addButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
         addButton.addClickListener(event -> {
             FreightContainer container = new FreightContainer();
-            container.setBookingNo(bookingNo.getValue());
             container.setContainerNo(containerNo.getValue());
             container.setSealNo(sealNo.getValue());
             container.setNoOfPackages(noOfPackages.getValue());
@@ -94,7 +93,6 @@ public class CreateBookingView extends VerticalLayout {
             containerGrid.setItems(containerList);
         });
         addButton.setEnabled(bookingNo.getValue() != null && !bookingNo.getValue().isEmpty());
-
 
         Button saveButton = new Button("Save Booking");
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -108,12 +106,12 @@ public class CreateBookingView extends VerticalLayout {
             booking.setNumOfContainers(numOfCont.getValue());
             booking.setStuffingCostPerContainer(stuffingCost.getValue());
             booking.setContainerSize(containerSize.getValue());
+            containerList.forEach(freightContainer -> freightContainer.setBooking(booking));
             booking.setContainer(containerList);
             booking.setEnteredOn(LocalDateTime.now());
-            bookingService.saveBooking(booking);
+            //bookingService.saveBooking(booking, containerList);
             Util.getNotificationForSuccess("Booking Saved Successfully").open();
         });
-
         Hr line = new Hr();
         line.setHeight("5px");
         line.setClassName("style=background-color:black");

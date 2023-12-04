@@ -1,6 +1,5 @@
 package com.unison.ratemaster.Entity;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,8 +11,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @Getter
 @Setter
-public class FreightContainerId implements Serializable {
-    private Long bookingId;
-    private String containerNo;
-    private String sealNo;
+public class BookingId implements Serializable {
+    private String bookingNo;
+    private String invoiceNo;
 }

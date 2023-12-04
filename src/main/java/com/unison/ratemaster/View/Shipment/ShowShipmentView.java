@@ -38,6 +38,8 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -49,19 +51,25 @@ public class ShowShipmentView extends VerticalLayout {
 
     byte[] masterBl;
 
+    private final String REPORTS_PATH = "Reports/";
+
     public ShowShipmentView(@Autowired ShipmentService shipmentService,
                             @Autowired ClientService clientService,
                             @Autowired ScheduleService scheduleService,
                             @Autowired PortService portService,
-                            @Autowired BookingService bookingService) {
+                            @Autowired BookingService bookingService,
+                            @Autowired CommodityService commodityService) {
+
+        H2 title = new H2("View Shipment");
+
         Grid<Shipment> grid = new Grid<>();
         grid.addColumn(Shipment::getBlNo).setHeader("B/L No.").setSortable(false).setFrozen(true).setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getBooking().getBookingNo()).setHeader("Booking").setAutoWidth(true);
         grid.addColumn(Shipment::getInvoiceNo).setHeader("Invoice").setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getShipper().getName(), "name").setHeader("Shipper")
                 .setTooltipGenerator(shipment -> shipment.getShipper().getName());
-        grid.addColumn(Shipment::getNumberOfContainer).setHeader("Containers").setAutoWidth(true);
-        grid.addColumn(shipment -> shipment.getContainerSize().getContainerSize()).setHeader("Size").setAutoWidth(true);
+        grid.addColumn(shipment -> shipment.getBooking().getNumOfContainers()).setHeader("Containers").setAutoWidth(true);
+        grid.addColumn(shipment -> shipment.getBooking().getContainerSize().getContainerSize()).setHeader("Size").setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getStatus().name()).setHeader("Status").setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getCreatedOn().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setHeader("Created").setSortable(true);
         grid.addColumn(shipment -> shipment.getLastUpdated().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setHeader("Updated").setSortable(true);
@@ -85,10 +93,11 @@ public class ShowShipmentView extends VerticalLayout {
 
         grid.addComponentColumn(shipment -> {
             Anchor anchor = new Anchor(new StreamResource(shipment.getBooking().getBookingNo() + ".pdf", (InputStreamFactory) () -> {
-                try (FileInputStream stream = new FileInputStream("Reports/shipment_advice.jasper")) {
-                    final Map<String, Object> parameters = prepareParams(shipment);
+                try (FileInputStream stream = new FileInputStream(REPORTS_PATH + "shipment_advice.jasper")) {
+                    final Map<String, Object> parameters = prepareParamsForShipmentAdvice(shipment);
                     return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
                 } catch (JRException | IOException e) {
+                    Util.getNotificationForError("Null value found for mandatory record. Please fill up mandatory records properly.").open();
                     throw new RuntimeException(e);
                 }
             }), "");
@@ -101,7 +110,7 @@ public class ShowShipmentView extends VerticalLayout {
         GridContextMenu<Shipment> menu = grid.addContextMenu();
         menu.addItem("Edit Shipment", event -> {
             if (event.getItem().isPresent()) {
-                createEditDialog(event.getItem().get(), clientService, shipmentService, scheduleService).open();
+                createEditDialog(event.getItem().get(), clientService, shipmentService, scheduleService, commodityService).open();
             }
         });
         menu.addItem("Edit Schedule", event -> {
@@ -124,24 +133,93 @@ public class ShowShipmentView extends VerticalLayout {
 
         VerticalLayout layout = new VerticalLayout(grid);
         layout.setPadding(false);
-        add(layout);
+        add(title, layout);
     }
 
-    private Map<String, Object> prepareParams(Shipment shipment) {
+    private Map<String, Object> prepareParamsForShipmentAdvice(Shipment shipment) {
         Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("ADVICE_DATE", getFormattedDate(LocalDate.now()));
         paramMap.put("BL_NO", shipment.getBlNo());
         paramMap.put("BOOKING_NO", shipment.getBooking().getBookingNo());
         paramMap.put("INVOICE_NO", shipment.getInvoiceNo());
         paramMap.put("STUFFING_DATE", shipment.getBooking().getStuffingDate().format(DateTimeFormatter.ofPattern("dd-MMM-yyyy")));
         paramMap.put("SHIPPER_NAME", shipment.getShipper().getName());
-        paramMap.put("CONSIGNEE", shipment.getConsignee().getName());
-        paramMap.put("CONTAINER", shipment.getNumberOfContainer() + "x" + shipment.getContainerSize().getContainerSize());
+        paramMap.put("CONSIGNEE", shipment.getNotifyParty().getName());
+        paramMap.put("CONTAINER", shipment.getBooking().getNumOfContainers() + "x"
+                + shipment.getBooking().getContainerSize().getContainerSize());
         paramMap.put("COMMODITY", shipment.getCommodity().getName());
-        paramMap.put("QUANTITY", "20 Bales");
-        paramMap.put("GROSS_WEIGHT", "100,236 KGS");
-        //paramMap.put("SEAL_NO", shipment.getBlNo());
-        //paramMap.put("CONTAINERS", shipment.getBlNo());
+        paramMap.put("QUANTITY", calculateQuantity(shipment.getBooking()));
+        paramMap.put("GROSS_WEIGHT", calculateWeight(shipment.getBooking()));
+        paramMap.put("LOGO_URL", REPORTS_PATH + "logo_best.png");
+        paramMap.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortShortCode());
+        paramMap.put("MV_CONNECT_PORT", shipment.getSchedule().getMotherVesselPort().getPortShortCode());
+        paramMap.put("TS_PORT", shipment.getSchedule().getTsPort().getPortName());
+        paramMap.put("DEST_PORT", shipment.getSchedule().getPortOfDestination().getPortName());
+        paramMap.put("POL_ETA", getFormattedDate(shipment.getSchedule().getLoadingPortEta()));
+        paramMap.put("POL_ETD", getFormattedDate(shipment.getSchedule().getLoadingPortEtd()));
+        paramMap.put("MV_PORT_FEEDER_ETA", getFormattedDate(shipment.getSchedule().getMvPortFeederEta()));
+        paramMap.put("MV_ETA", getFormattedDate(shipment.getSchedule().getMotherVesselPortEta()));
+        paramMap.put("TS_ETA", getFormattedDate(shipment.getSchedule().getTsPortEta()));
+        paramMap.put("DEST_ETA", getFormattedDate(shipment.getSchedule().getDestinationPortEta()));
+        paramMap.put("FEEDER", shipment.getSchedule().getFeederVesselName());
+        paramMap.put("MOTHER", shipment.getSchedule().getMotherVesselName());
+
+        paramMap.put("SEAL_NO", getSealNo(shipment.getBooking()));
+        paramMap.put("CONTAINERS", getContainers(shipment.getBooking()));
+
         return paramMap;
+    }
+
+    private Object calculateWeight(Booking booking) {
+        if (booking.getContainer() == null || booking.getContainer().isEmpty()) {
+            return "";
+        }
+        BigDecimal grossWeight = new BigDecimal("0");
+        for (FreightContainer container : booking.getContainer()) {
+            grossWeight = grossWeight.add(container.getGrossWeight());
+        }
+        return grossWeight + " KGS";
+    }
+
+    private String calculateQuantity(Booking booking) {
+        if (booking.getContainer() == null || booking.getContainer().isEmpty()) {
+            return "";
+        }
+        int quantity = 0;
+        String unit = "";
+        for (FreightContainer container : booking.getContainer()) {
+            quantity += container.getNoOfPackages();
+            unit = container.getPackageUnit().toString();
+        }
+        return quantity + " " + unit;
+    }
+
+    private String getContainers(Booking booking) {
+        if (booking.getContainer() == null || booking.getContainer().isEmpty()) {
+            return "";
+        }
+        StringBuilder containers = new StringBuilder();
+        for (FreightContainer container : booking.getContainer()) {
+            containers.append(container.getContainerNo()).append(", ");
+        }
+        containers.replace(containers.length() - 2, containers.length() - 1, "");
+        return containers.toString();
+    }
+
+    private String getSealNo(Booking booking) {
+        if (booking.getContainer() == null || booking.getContainer().isEmpty()) {
+            return "";
+        }
+        StringBuilder sealNo = new StringBuilder();
+        for (FreightContainer container : booking.getContainer()) {
+            sealNo.append(container.getSealNo()).append(", ");
+        }
+        sealNo.replace(sealNo.length() - 2, sealNo.length() - 1, "");
+        return sealNo.toString();
+    }
+
+    private String getFormattedDate(LocalDate date) {
+        return date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
     }
 
     private Component createFilterHeader(String labelText,
@@ -166,7 +244,8 @@ public class ShowShipmentView extends VerticalLayout {
 
 
     private Dialog createEditDialog(Shipment shipment, ClientService clientService,
-                                    ShipmentService shipmentService, ScheduleService scheduleService) {
+                                    ShipmentService shipmentService, ScheduleService scheduleService,
+                                    CommodityService commodityService) {
 
         Dialog dialog = new Dialog();
 
@@ -180,8 +259,10 @@ public class ShowShipmentView extends VerticalLayout {
         blNo.setValue(shipment.getBlNo());
         TextArea goodsDescription = new TextArea("Goods Description");
         goodsDescription.setValue(shipment.getGoodsDescription());
+        goodsDescription.setHeight(10, Unit.EM);
         TextArea shipperMarks = new TextArea("Shipper Marks");
         shipperMarks.setValue(shipment.getShipperMarks());
+        shipperMarks.setHeight(10, Unit.EM);
 
         TextField bookingNo = new TextField("Booking No");
         bookingNo.setValue(shipment.getBooking().getBookingNo());
@@ -196,7 +277,7 @@ public class ShowShipmentView extends VerticalLayout {
         ComboBox<ContainerSize> containerSize = new ComboBox<>("Container Size");
         containerSize.setItems(ContainerSize.values());
         containerSize.setItemLabelGenerator(ContainerSize::getContainerSize);
-        containerSize.setValue(shipment.getContainerSize());
+        containerSize.setValue(shipment.getBooking().getContainerSize());
 
         DatePicker stuffingDate = new DatePicker("Stuffing Date");
         stuffingDate.setValue(shipment.getBooking().getStuffingDate());
@@ -205,10 +286,15 @@ public class ShowShipmentView extends VerticalLayout {
         stuffingDepot.setValue(shipment.getBooking().getStuffingDepot());
 
         IntegerField numOfContainers = new IntegerField("Number of Containers");
-        numOfContainers.setValue(shipment.getNumberOfContainer());
+        numOfContainers.setValue(shipment.getBooking().getNumOfContainers());
 
         BigDecimalField ratePerContainer = new BigDecimalField("Rate per Container");
         ratePerContainer.setValue(shipment.getBooking().getStuffingCostPerContainer());
+
+        ComboBox<Commodity> commodities = new ComboBox<>("Commodity");
+        commodities.setItems(commodityService.getAllCommodity());
+        commodities.setItemLabelGenerator(Commodity::getCommoditySummary);
+        commodities.setValue(shipment.getCommodity());
 
         List<Client> clients = clientService.getAllClients();
         ComboBox<Client> shipper = new ComboBox<>("Shipper");
@@ -229,6 +315,7 @@ public class ShowShipmentView extends VerticalLayout {
         ComboBox<Schedule> scheduleComboBox = new ComboBox<>("Schedule");
         scheduleComboBox.setItems(scheduleService.getValidSchedules());
         scheduleComboBox.setItemLabelGenerator(Schedule::getScheduleSummary);
+        scheduleComboBox.setValue(shipment.getSchedule());
 
         ComboBox<ShipmentStatus> statusComboBox = new ComboBox<>("Status");
         statusComboBox.setItems(ShipmentStatus.values());
@@ -241,10 +328,11 @@ public class ShowShipmentView extends VerticalLayout {
         upload.setAcceptedFileTypes("application/pdf", ".pdf");
         upload.setMaxFiles(1);
 
+
         upload.addSucceededListener(event -> {
             InputStream inputStream = memoryBuffer.getInputStream();
             try {
-                this.masterBl = inputStream.readAllBytes();
+                masterBl = inputStream.readAllBytes();
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -267,17 +355,17 @@ public class ShowShipmentView extends VerticalLayout {
             shipment.setConsignee(consignee.getValue());
             shipment.setNotifyParty(notifyParty.getValue());
             shipment.setStatus(statusComboBox.getValue());
-            if (this.masterBl != null) {
+            shipment.setCommodity(commodities.getValue());
+            if (masterBl != null) {
                 shipment.setMasterBl(masterBl);
                 this.masterBl = null;
             }
-            // editedShipment.setCommodity(commodities.getValue());
-            shipment.setContainerSize(containerSize.getValue());
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
 
             shipment.getBooking().setBookingNo(bookingNo.getValue());
             shipment.getBooking().setContainerType(containerType.getValue());
+            shipment.getBooking().setContainerSize(containerSize.getValue());
             shipment.getBooking().setInvoiceNo(invoiceNo.getValue());
             shipment.getBooking().setStuffingDate(stuffingDate.getValue());
             shipment.getBooking().setStuffingDepot(stuffingDepot.getValue());
@@ -296,8 +384,9 @@ public class ShowShipmentView extends VerticalLayout {
 
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize, ratePerContainer,
-                stuffingDate, stuffingDepot, scheduleComboBox, goodsDescription, shipperMarks, shipper, consignee, notifyParty, upload);
+                stuffingDate, stuffingDepot, commodities, scheduleComboBox, shipper, consignee, notifyParty, upload, goodsDescription, shipperMarks);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
+
         formLayout.setColspan(goodsDescription, 2);
         formLayout.setColspan(shipperMarks, 2);
 
@@ -343,6 +432,7 @@ public class ShowShipmentView extends VerticalLayout {
         ComboBox<ContainerSize> containerSize = new ComboBox<>("Container Size");
         containerSize.setItems(ContainerSize.values());
         containerSize.setValue(booking.getContainerSize());
+        containerSize.setItemLabelGenerator(ContainerSize::getContainerSize);
 
         DatePicker stuffingDate = new DatePicker("Stuffing Date");
         stuffingDate.setValue(booking.getStuffingDate());
@@ -380,7 +470,7 @@ public class ShowShipmentView extends VerticalLayout {
         addButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
         addButton.addClickListener(event -> {
             FreightContainer container = new FreightContainer();
-            container.setBookingNo(bookingNo.getValue());
+            container.setBooking(booking);
             container.setContainerNo(containerNo.getValue());
             container.setSealNo(sealNo.getValue());
             container.setNoOfPackages(noOfPackages.getValue());
@@ -403,6 +493,7 @@ public class ShowShipmentView extends VerticalLayout {
             booking.setNumOfContainers(numOfCont.getValue());
             booking.setStuffingCostPerContainer(stuffingCost.getValue());
             booking.setContainerSize(containerSize.getValue());
+            containerList.forEach(container -> container.setBookingId(booking.getBookingId()));
             booking.setContainer(containerList);
             booking.setEnteredOn(LocalDateTime.now());
             bookingService.saveBooking(booking);
@@ -464,12 +555,14 @@ public class ShowShipmentView extends VerticalLayout {
 
         ComboBox<Port> motherVesselPort = Util.getPortComboBoxByItemListAndTitle(portList, "Mother Vessel Port");
         DatePicker motherVesselPortEta = new DatePicker("Mother Vessel Port ETA");
+        DatePicker mvPortEta = new DatePicker("Feeder Connect ETA");
         motherVesselPort.setRequired(true);
         motherVesselPortEta.setRequired(true);
         motherVesselPort.addValueChangeListener(event -> {
             if (event != null && event.getValue() != null) {
                 Port vesselPort = event.getValue();
-                motherVesselPortEta.setLabel("ETA " + vesselPort.getPortShortCode());
+                motherVesselPortEta.setLabel("Mother ETA " + vesselPort.getPortShortCode());
+                mvPortEta.setLabel("Feeder ETA " + vesselPort.getPortShortCode());
             }
         });
 
@@ -503,6 +596,7 @@ public class ShowShipmentView extends VerticalLayout {
 
             motherVesselName.setValue(schedule.getMotherVesselName());
             motherVesselPort.setValue(schedule.getMotherVesselPort());
+            mvPortEta.setValue(schedule.getMvPortFeederEta());
             motherVesselPortEta.setValue(schedule.getMotherVesselPortEta());
             tsPort.setValue(schedule.getTsPort());
             tsPortEta.setValue(schedule.getTsPortEta());
@@ -517,6 +611,7 @@ public class ShowShipmentView extends VerticalLayout {
             newSchedule.setPortOfLoading(portOfLoading.getValue());
             newSchedule.setLoadingPortEta(polEta.getValue());
             newSchedule.setLoadingPortEtd(polEtd.getValue());
+            newSchedule.setMvPortFeederEta(mvPortEta.getValue());
 
             newSchedule.setMotherVesselName(motherVesselName.getValue());
             newSchedule.setMotherVesselPort(motherVesselPort.getValue());
@@ -539,9 +634,8 @@ public class ShowShipmentView extends VerticalLayout {
             }
         });
 
-        formLayout.add(feederVesselName, portOfLoading, polEta, polEtd, motherVesselName,
-                motherVesselPort, motherVesselPortEta, tsPort, tsPortEta, destinationPort, destinationPortEta);
-        formLayout.setColspan(motherVesselName, 2);
+        formLayout.add(feederVesselName, motherVesselName, portOfLoading, motherVesselPort, polEta, motherVesselPortEta,
+                polEtd, mvPortEta, tsPort, tsPortEta, destinationPort, destinationPortEta);
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Close", e -> dialog.close());
 

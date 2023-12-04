@@ -22,9 +22,9 @@ public class Schedule {
     private Port portOfLoading;
     private LocalDate loadingPortEta;
     private LocalDate loadingPortEtd;
+    private LocalDate mvPortFeederEta;
 
     private String motherVesselName;
-
     @OneToOne
     private Port motherVesselPort;
     private LocalDate motherVesselPortEta;

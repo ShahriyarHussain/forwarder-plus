@@ -1,6 +1,5 @@
 package com.unison.ratemaster.Entity;
 
-import com.unison.ratemaster.Enum.ContainerSize;
 import com.unison.ratemaster.Enum.ShipmentStatus;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,8 +28,6 @@ public class Shipment {
     private String goodsDescription;
     @Length(max = 100)
     private String invoiceNo;
-    private Integer numberOfContainer;
-    private ContainerSize containerSize;
     private ShipmentStatus status;
     private LocalDateTime createdOn;
     private LocalDateTime lastUpdated;
