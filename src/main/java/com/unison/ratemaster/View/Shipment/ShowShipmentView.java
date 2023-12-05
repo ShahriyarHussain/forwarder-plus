@@ -124,6 +124,12 @@ public class ShowShipmentView extends VerticalLayout {
             }
         });
         menu.add(new Hr());
+        menu.addItem("Create Invoice", event -> {
+            if (event.getItem().isPresent()) {
+                createBookingEditorDialog(event.getItem().get(), bookingService).open();
+            }
+        });
+        menu.add(new Hr());
         menu.addItem("Delete", event -> {
             if (event.getItem().isEmpty()) return;
             shipmentService.deleteShipmentAndBooking(event.getItem().get());
@@ -322,28 +328,7 @@ public class ShowShipmentView extends VerticalLayout {
         statusComboBox.setItemLabelGenerator(ShipmentStatus::name);
         statusComboBox.setValue(shipment.getStatus());
 
-        MemoryBuffer memoryBuffer = new MemoryBuffer();
-        Upload upload = new Upload(memoryBuffer);
-        upload.setDropAllowed(true);
-        upload.setAcceptedFileTypes("application/pdf", ".pdf");
-        upload.setMaxFiles(1);
-
-
-        upload.addSucceededListener(event -> {
-            InputStream inputStream = memoryBuffer.getInputStream();
-            try {
-                masterBl = inputStream.readAllBytes();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                Util.getNotificationForError("Error: " + e.getMessage()).open();
-            }
-        });
-
-        upload.addFileRejectedListener(event -> {
-            String errorMessage = event.getErrorMessage();
-            Util.getNotificationForError(errorMessage).open();
-        });
+        Upload upload = getUpload();
 
         Button saveButton = new Button("Save", event -> {
             shipment.setName(name.getValue());
@@ -397,6 +382,32 @@ public class ShowShipmentView extends VerticalLayout {
         dialog.getFooter().add(saveButton);
 
         return dialog;
+    }
+
+    private Upload getUpload() {
+        MemoryBuffer memoryBuffer = new MemoryBuffer();
+        Upload upload = new Upload(memoryBuffer);
+        upload.setDropAllowed(true);
+        upload.setAcceptedFileTypes("application/pdf", ".pdf");
+        upload.setMaxFiles(1);
+
+
+        upload.addSucceededListener(event -> {
+            InputStream inputStream = memoryBuffer.getInputStream();
+            try {
+                masterBl = inputStream.readAllBytes();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                Util.getNotificationForError("Error: " + e.getMessage()).open();
+            }
+        });
+
+        upload.addFileRejectedListener(event -> {
+            String errorMessage = event.getErrorMessage();
+            Util.getNotificationForError(errorMessage).open();
+        });
+        return upload;
     }
 
     public Dialog createBookingEditorDialog(Shipment shipment, BookingService bookingService) {
