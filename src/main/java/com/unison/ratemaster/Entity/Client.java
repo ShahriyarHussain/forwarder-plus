@@ -23,6 +23,8 @@ public class Client {
     private String name;
     @Length(max = 500)
     private String address;
+    @Length(max = 50)
+    private String email;
     @Length(max = 20)
     private String postCode;
     @Length(max = 20)

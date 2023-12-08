@@ -32,6 +32,8 @@ public class Shipment {
     private LocalDateTime createdOn;
     private LocalDateTime lastUpdated;
     @OneToOne
+    private Invoice invoice;
+    @OneToOne
     private Booking booking;
     @OneToOne
     private Client shipper;

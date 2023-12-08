@@ -35,6 +35,7 @@ public class ManagePartyView extends VerticalLayout {
         TextField country = new TextField("Country");
         TextField taxId = new TextField("Country");
         TextField postCode = new TextField("Post/Zip Code");
+        TextField email = new TextField("Email");
 
         ComboBox<ClientType> partyType = new ComboBox<>("Party Type");
         partyType.setItems(ClientType.values());
@@ -69,13 +70,14 @@ public class ManagePartyView extends VerticalLayout {
             client.setCountry(country.getValue());
             client.setPostCode(postCode.getValue());
             client.setTaxId(taxId.getValue());
+            client.setEmail(email.getValue());
 
             clientService.saveClient(client);
             Util.getNotificationForSuccess("Client Added!").open();
             clientGrid.setItems(clientService.getAllClients());
         });
 
-        formLayout.add(partyName, partyType, address, city, country, postCode);
+        formLayout.add(partyName, partyType, address, city, country, postCode, email);
         formLayout.setColspan(address, 2);
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 

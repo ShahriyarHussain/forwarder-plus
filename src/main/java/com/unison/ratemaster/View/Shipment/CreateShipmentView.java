@@ -15,7 +15,6 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -40,15 +39,9 @@ public class CreateShipmentView extends VerticalLayout {
                               @Autowired ClientService clientService,
                               @Autowired ScheduleService scheduleService,
                               @Autowired CommodityService commodityService,
-                              @Autowired BookingService bookingService) {
+                              @Autowired InvoiceService invoiceService) {
 
         H2 title = new H2("Create Shipment");
-
-//        ComboBox<Booking> bookings = new ComboBox<>("Choose Booking");
-//        bookings.setItems(bookingService.getLatestBooking());
-//        bookings.setItemLabelGenerator(booking -> booking.getBookingNo() + "-"
-//                + booking.getNumOfContainers() + " x " + booking.getContainerSize().getContainerSize());
-//        bookings.setWidthFull();
 
         TextField name = new TextField("Shipment Name");
         name.setRequired(true);
@@ -60,7 +53,7 @@ public class CreateShipmentView extends VerticalLayout {
         shipperMarks.setHeight(10, Unit.EM);
 
         TextField bookingNo = new TextField("Booking No");
-        TextField invoiceNo = new TextField("Invoice No");
+        TextField invoiceNo = new TextField("Shipper Invoice No");
 
         ComboBox<ContainerType> containerType = new ComboBox<>("Container Type:");
         containerType.setItems(ContainerType.values());
@@ -73,7 +66,6 @@ public class CreateShipmentView extends VerticalLayout {
         DatePicker stuffingDate = new DatePicker("Stuffing Date");
         TextField stuffingDepot = new TextField("Stuffing Depot");
         IntegerField numOfContainers = new IntegerField("Number of Containers");
-        BigDecimalField ratePerContainer = new BigDecimalField("Rate per Container");
 
         List<Client> clients = clientService.getAllClients();
         ComboBox<Client> shipper = new ComboBox<>("Shipper");
@@ -96,19 +88,6 @@ public class CreateShipmentView extends VerticalLayout {
         commodities.setItems(commodityService.getAllCommodity());
         commodities.setItemLabelGenerator(Commodity::getCommoditySummary);
 
-//        bookings.addValueChangeListener(event -> {
-//            this.booking = event.getSource().getValue();
-//            if (this.booking != null) {
-//                bookingNo.setValue(this.booking.getBookingNo());
-//                containerType.setValue(this.booking.getContainerType());
-//                invoiceNo.setValue(this.booking.getInvoiceNo());
-//                stuffingDate.setValue(this.booking.getStuffingDate());
-//                stuffingDepot.setValue(this.booking.getStuffingDepot());
-//                numOfContainers.setValue(this.booking.getNumOfContainers());
-//                ratePerContainer.setValue(this.booking.getStuffingCostPerContainer());
-//            }
-//        });
-
         Upload upload = getUploadComponent();
 
         Button saveButton = new Button("Save", event -> {
@@ -128,6 +107,14 @@ public class CreateShipmentView extends VerticalLayout {
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
 
+            Invoice invoice = new Invoice();
+            invoice.setInvoiceNo(invoiceService.getInvoiceNo());
+            invoice.setGoodsDescription(shipment.getCommodity().getName());
+            invoice = invoiceService.saveInvoice(invoice);
+
+            shipment.setInvoice(invoice);
+
+
             Booking booking = new Booking();
             booking.setBookingNo(bookingNo.getValue());
             booking.setNumOfContainers(numOfContainers.getValue());
@@ -138,7 +125,6 @@ public class CreateShipmentView extends VerticalLayout {
             booking.setStuffingDepot(stuffingDepot.getValue());
             booking.setNumOfContainers(numOfContainers.getValue());
             booking.setContainerSize(containerSize.getValue());
-            booking.setStuffingCostPerContainer(ratePerContainer.getValue());
             booking.setContainer(new HashSet<>());
             booking.setEnteredOn(LocalDateTime.now());
 
@@ -146,14 +132,13 @@ public class CreateShipmentView extends VerticalLayout {
                 shipmentService.createNewShipment(shipment, booking);
                 Util.getNotificationForSuccess("Shipment Created Successfully!").open();
             } catch (Exception e) {
-                e.printStackTrace();
                 Util.getNotificationForError("Unexpected Error: " + e.getMessage()).open();
             }
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         FormLayout formLayout = new FormLayout();
-        formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize, ratePerContainer,
+        formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize,
                 stuffingDate, stuffingDepot, commodities, scheduleComboBox, shipper, consignee, notifyParty, upload,
                 goodsDescription, shipperMarks);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
@@ -176,7 +161,6 @@ public class CreateShipmentView extends VerticalLayout {
             try {
                 this.masterBl = inputStream.readAllBytes();
             } catch (IOException e) {
-                e.printStackTrace();
                 Util.getNotificationForError("Error: " + e.getMessage()).open();
             }
         });

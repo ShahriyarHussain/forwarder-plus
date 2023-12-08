@@ -22,20 +22,24 @@ public class ShipmentService {
         shipmentRepository.save(shipment);
     }
 
+
     @Transactional
     public void saveEditedShipment(Shipment shipment) {
         shipmentRepository.save(shipment);
     }
+
 
     @Transactional
     public void deleteShipmentAndBooking(Shipment shipment) {
         shipmentRepository.delete(shipment);
     }
 
+
     @Transactional
     public List<Shipment> getAllShipments() {
         return shipmentRepository.getAllShipmentOrderedByCreateDate();
     }
+
 
     @Transactional
     public byte[] getPdf(String blNo) {
