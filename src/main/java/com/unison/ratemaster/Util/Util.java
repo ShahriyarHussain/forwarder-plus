@@ -55,6 +55,9 @@ public class Util {
     }
 
     public static String getAmountInWords(BigDecimal amount) {
+        if (amount == null) {
+            return "Zero";
+        }
         setMap();
         StringBuilder amountInWords = new StringBuilder();
         amount = amount.setScale(0, RoundingMode.DOWN);

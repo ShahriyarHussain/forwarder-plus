@@ -11,7 +11,6 @@ import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -63,8 +62,6 @@ public class CreateShipmentView extends VerticalLayout {
         containerSize.setItems(ContainerSize.values());
         containerSize.setItemLabelGenerator(ContainerSize::getContainerSize);
 
-        DatePicker stuffingDate = new DatePicker("Stuffing Date");
-        TextField stuffingDepot = new TextField("Stuffing Depot");
         IntegerField numOfContainers = new IntegerField("Number of Containers");
 
         List<Client> clients = clientService.getAllClients();
@@ -121,8 +118,6 @@ public class CreateShipmentView extends VerticalLayout {
             booking.setContainerType(containerType.getValue());
             booking.setInvoiceNo(invoiceNo.getValue());
             booking.setStuffingCostPerContainer(BigDecimal.ZERO);
-            booking.setStuffingDate(stuffingDate.getValue());
-            booking.setStuffingDepot(stuffingDepot.getValue());
             booking.setNumOfContainers(numOfContainers.getValue());
             booking.setContainerSize(containerSize.getValue());
             booking.setContainer(new HashSet<>());
@@ -139,8 +134,8 @@ public class CreateShipmentView extends VerticalLayout {
 
         FormLayout formLayout = new FormLayout();
         formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize,
-                stuffingDate, stuffingDepot, commodities, scheduleComboBox, shipper, consignee, notifyParty, upload,
-                goodsDescription, shipperMarks);
+                commodities, scheduleComboBox, shipper, consignee, notifyParty,
+                goodsDescription, shipperMarks, upload);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
         formLayout.setColspan(goodsDescription,2);
         formLayout.setColspan(shipperMarks,2);
@@ -169,6 +164,7 @@ public class CreateShipmentView extends VerticalLayout {
             String errorMessage = event.getErrorMessage();
             Util.getNotificationForError(errorMessage).open();
         });
+        upload.setUploadButton(new Button("Upload MB/L"));
         return upload;
     }
 

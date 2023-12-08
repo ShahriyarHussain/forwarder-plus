@@ -40,6 +40,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -86,7 +87,6 @@ public class ShowShipmentView extends VerticalLayout {
                 } catch (Exception e) {
                     downloadButton.setTooltipText("BL Not Found");
                     downloadButton.setEnabled(false);
-                    Util.getNotificationForError("BL Not Found").open();
                     return null;
                 }
             }), "");
@@ -289,17 +289,8 @@ public class ShowShipmentView extends VerticalLayout {
         containerSize.setItemLabelGenerator(ContainerSize::getContainerSize);
         containerSize.setValue(shipment.getBooking().getContainerSize());
 
-        DatePicker stuffingDate = new DatePicker("Stuffing Date");
-        stuffingDate.setValue(shipment.getBooking().getStuffingDate());
-
-        TextField stuffingDepot = new TextField("Stuffing Depot");
-        stuffingDepot.setValue(shipment.getBooking().getStuffingDepot());
-
         IntegerField numOfContainers = new IntegerField("Number of Containers");
         numOfContainers.setValue(shipment.getBooking().getNumOfContainers());
-
-        BigDecimalField ratePerContainer = new BigDecimalField("Rate per Container");
-        ratePerContainer.setValue(shipment.getBooking().getStuffingCostPerContainer());
 
         ComboBox<Commodity> commodities = new ComboBox<>("Commodity");
         commodities.setItems(commodityService.getAllCommodity());
@@ -351,15 +342,13 @@ public class ShowShipmentView extends VerticalLayout {
             }
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
+            shipment.setSchedule(scheduleComboBox.getValue());
 
             shipment.getBooking().setBookingNo(bookingNo.getValue());
             shipment.getBooking().setContainerType(containerType.getValue());
             shipment.getBooking().setContainerSize(containerSize.getValue());
             shipment.getBooking().setInvoiceNo(invoiceNo.getValue());
-            shipment.getBooking().setStuffingDate(stuffingDate.getValue());
-            shipment.getBooking().setStuffingDepot(stuffingDepot.getValue());
             shipment.getBooking().setNumOfContainers(numOfContainers.getValue());
-            shipment.getBooking().setStuffingCostPerContainer(ratePerContainer.getValue());
 
             try {
                 shipmentService.saveEditedShipment(shipment);
@@ -372,8 +361,8 @@ public class ShowShipmentView extends VerticalLayout {
         });
 
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize, ratePerContainer,
-                stuffingDate, stuffingDepot, commodities, scheduleComboBox, shipper, consignee, notifyParty, upload, goodsDescription, shipperMarks);
+        formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize,
+                commodities, scheduleComboBox, shipper, consignee, notifyParty, goodsDescription, shipperMarks, upload);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
 
         formLayout.setColspan(goodsDescription, 2);
@@ -411,6 +400,7 @@ public class ShowShipmentView extends VerticalLayout {
             String errorMessage = event.getErrorMessage();
             Util.getNotificationForError(errorMessage).open();
         });
+        upload.setUploadButton(new Button("Upload MB/L"));
         return upload;
     }
 
@@ -684,23 +674,23 @@ public class ShowShipmentView extends VerticalLayout {
         Text inWords = new Text("Zero");
         inWords.setText(Util.getAmountInWords(invoice.getSubTotal()));
 
-        BigDecimalField total = new BigDecimalField("Total", BigDecimal.ZERO, "Cannot be Empty");
+        BigDecimalField total = new BigDecimalField("Total", BigDecimal.ZERO, "");
         total.setValue(invoice.getSubTotal());
         total.setReadOnly(true);
 
-        BigDecimalField freightInBDT = new BigDecimalField("Freight in BDT", BigDecimal.ZERO, "Cannot be Empty");
+        BigDecimalField freightInBDT = new BigDecimalField("Freight in BDT", BigDecimal.ZERO, "");
         freightInBDT.setValue(invoice.getFreightTotalInLocalCurr());
         freightInBDT.setReadOnly(true);
 
-        BigDecimalField totalFreight = new BigDecimalField("Total Freight", BigDecimal.ZERO, "Cannot be Empty");
+        BigDecimalField totalFreight = new BigDecimalField("Total Freight", BigDecimal.ZERO, "");
         totalFreight.setValue(invoice.getTotalFreight());
         totalFreight.setReadOnly(true);
 
-        BigDecimalField ratePerContField = new BigDecimalField("Rate Per Container", BigDecimal.ZERO, "Cannot be Empty");
+        BigDecimalField ratePerContField = new BigDecimalField("Rate Per Container", BigDecimal.ZERO, "");
         ratePerContField.setValue(invoice.getRatePerContainer());
         ratePerContField.setValueChangeMode(ValueChangeMode.EAGER);
 
-        BigDecimalField conversionRate = new BigDecimalField("Conversion Rate", BigDecimal.ZERO, "Cannot be Empty");
+        BigDecimalField conversionRate = new BigDecimalField("Conversion Rate", BigDecimal.ZERO, "");
         conversionRate.setValue(invoice.getConversionRate());
 
         ComboBox<AmountCurrency> currComboBox = new ComboBox<>("Currency");
@@ -822,16 +812,16 @@ public class ShowShipmentView extends VerticalLayout {
             parameters.put("LOGO_URL", REPORTS_PATH + Util.imagePath);
             parameters.put("SHIPPER_INV_NO", shipment.getInvoiceNo());
             parameters.put("FREIGHT_CURRENCY", currComboBox.getValue().toString());
-            parameters.put("CONVERSION_RATE", conversionRate.getValue().toPlainString());
-            parameters.put("FREIGHT_RATE", ratePerContField.getValue().toPlainString());
-            parameters.put("TOTAL_FREIGHT", totalFreight.getValue().toPlainString());
-            parameters.put("FREIGHT_LOCAL", freightInBDT.getValue().toPlainString());
+            parameters.put("CONVERSION_RATE", conversionRate.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+            parameters.put("FREIGHT_RATE", ratePerContField.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+            parameters.put("TOTAL_FREIGHT", totalFreight.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+            parameters.put("FREIGHT_LOCAL", freightInBDT.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
             parameters.put("GOODS_DESCRIPTION", goodDescription.getValue());
             parameters.put("DESC_2", otherField1.getValue());
-            parameters.put("DESC_2_AMT", otherCost1Amt.getValue().toPlainString());
+            parameters.put("DESC_2_AMT", otherCost1Amt.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
             parameters.put("DESC_3", otherField2.getValue());
-            parameters.put("DESC_3_AMT", otherCost2Amt.getValue().toPlainString());
-            parameters.put("TOTAL", total.getValue().toPlainString());
+            parameters.put("DESC_3_AMT", otherCost2Amt.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+            parameters.put("TOTAL", total.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
             parameters.put("TOTAL_IN_WORD", inWords.getText());
             parameters.put("BANK_NAME", bankName.getValue());
             parameters.put("AC_NAME", acName.getValue());
