@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -46,8 +45,4 @@ public class ShipmentService {
     public byte[] getPdf(String blNo) {
         return shipmentRepository.getPdf(blNo);
     }
-
-    public String getInvoiceNo() {
-        return "USL-EXP-" + shipmentRepository.getInvoiceNoSequence() + "-" + LocalDate.now().getYear();
-    };
 }

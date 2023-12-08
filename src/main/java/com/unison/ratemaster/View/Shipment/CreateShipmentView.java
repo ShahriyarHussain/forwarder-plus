@@ -15,7 +15,6 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -39,7 +38,8 @@ public class CreateShipmentView extends VerticalLayout {
     public CreateShipmentView(@Autowired ShipmentService shipmentService,
                               @Autowired ClientService clientService,
                               @Autowired ScheduleService scheduleService,
-                              @Autowired CommodityService commodityService) {
+                              @Autowired CommodityService commodityService,
+                              @Autowired InvoiceService invoiceService) {
 
         H2 title = new H2("Create Shipment");
 
@@ -66,7 +66,6 @@ public class CreateShipmentView extends VerticalLayout {
         DatePicker stuffingDate = new DatePicker("Stuffing Date");
         TextField stuffingDepot = new TextField("Stuffing Depot");
         IntegerField numOfContainers = new IntegerField("Number of Containers");
-        BigDecimalField ratePerContainer = new BigDecimalField("Rate per Container");
 
         List<Client> clients = clientService.getAllClients();
         ComboBox<Client> shipper = new ComboBox<>("Shipper");
@@ -107,7 +106,14 @@ public class CreateShipmentView extends VerticalLayout {
             shipment.setMasterBl(this.masterBl);
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
-            shipment.setShipmentInvoiceNo(shipmentService.getInvoiceNo());
+
+            Invoice invoice = new Invoice();
+            invoice.setInvoiceNo(invoiceService.getInvoiceNo());
+            invoice.setGoodsDescription(shipment.getCommodity().getName());
+            invoice = invoiceService.saveInvoice(invoice);
+
+            shipment.setInvoice(invoice);
+
 
             Booking booking = new Booking();
             booking.setBookingNo(bookingNo.getValue());
@@ -119,7 +125,6 @@ public class CreateShipmentView extends VerticalLayout {
             booking.setStuffingDepot(stuffingDepot.getValue());
             booking.setNumOfContainers(numOfContainers.getValue());
             booking.setContainerSize(containerSize.getValue());
-            booking.setStuffingCostPerContainer(ratePerContainer.getValue());
             booking.setContainer(new HashSet<>());
             booking.setEnteredOn(LocalDateTime.now());
 
@@ -127,14 +132,13 @@ public class CreateShipmentView extends VerticalLayout {
                 shipmentService.createNewShipment(shipment, booking);
                 Util.getNotificationForSuccess("Shipment Created Successfully!").open();
             } catch (Exception e) {
-                e.printStackTrace();
                 Util.getNotificationForError("Unexpected Error: " + e.getMessage()).open();
             }
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         FormLayout formLayout = new FormLayout();
-        formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize, ratePerContainer,
+        formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize,
                 stuffingDate, stuffingDepot, commodities, scheduleComboBox, shipper, consignee, notifyParty, upload,
                 goodsDescription, shipperMarks);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
@@ -157,7 +161,6 @@ public class CreateShipmentView extends VerticalLayout {
             try {
                 this.masterBl = inputStream.readAllBytes();
             } catch (IOException e) {
-                e.printStackTrace();
                 Util.getNotificationForError("Error: " + e.getMessage()).open();
             }
         });
