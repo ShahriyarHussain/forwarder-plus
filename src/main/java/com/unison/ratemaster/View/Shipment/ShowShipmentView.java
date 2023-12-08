@@ -12,6 +12,7 @@ import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -65,14 +66,15 @@ public class ShowShipmentView extends VerticalLayout {
         Grid<Shipment> grid = new Grid<>();
         grid.addColumn(Shipment::getBlNo).setHeader("B/L No.").setSortable(false).setFrozen(true).setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getBooking().getBookingNo()).setHeader("Booking").setAutoWidth(true);
-        grid.addColumn(Shipment::getInvoiceNo).setHeader("Invoice").setAutoWidth(true);
-        grid.addColumn(shipment -> shipment.getShipper().getName(), "name").setHeader("Shipper")
-                .setTooltipGenerator(shipment -> shipment.getShipper().getName());
+        grid.addColumn(Shipment::getInvoiceNo).setHeader("Shipper Invoice").setAutoWidth(true);
+        grid.addColumn(Shipment::getShipmentInvoiceNo).setHeader("Invoice").setAutoWidth(true);
+        grid.addColumn(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName(), "name").setHeader("Shipper")
+                .setTooltipGenerator(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName());
         grid.addColumn(shipment -> shipment.getBooking().getNumOfContainers()).setHeader("Containers").setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getBooking().getContainerSize().getContainerSize()).setHeader("Size").setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getStatus().name()).setHeader("Status").setAutoWidth(true);
         grid.addColumn(shipment -> shipment.getCreatedOn().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setHeader("Created").setSortable(true);
-        grid.addColumn(shipment -> shipment.getLastUpdated().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setHeader("Updated").setSortable(true);
+        //grid.addColumn(shipment -> shipment.getLastUpdated().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setHeader("Updated").setSortable(true);
 
         grid.addComponentColumn(shipment -> {
             Button downloadButton = new Button(new Icon(VaadinIcon.DOWNLOAD));
@@ -156,7 +158,7 @@ public class ShowShipmentView extends VerticalLayout {
         paramMap.put("COMMODITY", shipment.getCommodity().getName());
         paramMap.put("QUANTITY", calculateQuantity(shipment.getBooking()));
         paramMap.put("GROSS_WEIGHT", calculateWeight(shipment.getBooking()));
-        paramMap.put("LOGO_URL", REPORTS_PATH + "logo_best.png");
+        paramMap.put("LOGO_URL", REPORTS_PATH + Util.imagePath);
         paramMap.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortShortCode());
         paramMap.put("MV_CONNECT_PORT", shipment.getSchedule().getMotherVesselPort().getPortShortCode());
         paramMap.put("TS_PORT", shipment.getSchedule().getTsPort().getPortName());
@@ -272,7 +274,7 @@ public class ShowShipmentView extends VerticalLayout {
 
         TextField bookingNo = new TextField("Booking No");
         bookingNo.setValue(shipment.getBooking().getBookingNo());
-        TextField invoiceNo = new TextField("Invoice No");
+        TextField invoiceNo = new TextField("Shipper Invoice No");
         invoiceNo.setValue(shipment.getInvoiceNo());
 
         ComboBox<ContainerType> containerType = new ComboBox<>("Container Type:");
@@ -665,6 +667,11 @@ public class ShowShipmentView extends VerticalLayout {
         IntegerField numOfContainer = new IntegerField("Containers");
         numOfContainer.setValue(shipment.getBooking().getNumOfContainers());
 
+        TextField invoiceNo = new TextField("Invoice No");
+        invoiceNo.setValue(shipment.getShipmentInvoiceNo());
+        TextField expNo = new TextField("Exp No");
+        DatePicker expDate = new DatePicker("Exp Date");
+
         Text inWords = new Text("Zero");
 
         BigDecimalField total = new BigDecimalField("Total", BigDecimal.ZERO, "Cannot be Empty");
@@ -725,14 +732,55 @@ public class ShowShipmentView extends VerticalLayout {
         TextField preparedByEmail = new TextField("Email");
         TextField contact = new TextField("Contact No:");
 
-        Button prepareInvoiceButton = new Button(new Icon(VaadinIcon.DOWNLOAD));
+        Button prepareInvoiceButton = new Button("Download Invoice", new Icon(VaadinIcon.DOWNLOAD));
+        prepareInvoiceButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Anchor anchor = new Anchor(new StreamResource("Invoice" + shipment.getBlNo() + ".pdf", (InputStreamFactory) () -> {
-            InvoiceDto dto = new InvoiceDto();
+            final Map<String, Object> parameters = new HashMap<>();
+
+            parameters.put("BL_NO", shipment.getBlNo());
+            parameters.put("ADDRESS", shipment.getShipper().getAddress());
+            parameters.put("INVOICE_NO", shipment.getShipmentInvoiceNo());
+            parameters.put("SHIPPER_NAME", shipment.getShipper().getName());
+            parameters.put("CONTAINER", numOfContainer.getValue() + "x" + shipment.getBooking().getContainerSize().getContainerSize());
+            parameters.put("COMMODITY", shipment.getCommodity().getName());
+            parameters.put("CONTAINERS", getContainers(shipment.getBooking()));
+            parameters.put("INVOICE_DATE", getFormattedDate(LocalDate.now()));
+            parameters.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortName());
+            parameters.put("DEST_PORT", shipment.getSchedule().getPortOfDestination().getPortName());
+            parameters.put("POL_ETD", getFormattedDate(shipment.getSchedule().getLoadingPortEta()));
+            parameters.put("DEST_ETA", getFormattedDate(shipment.getSchedule().getDestinationPortEta()));
+            parameters.put("SHIPPER_EMAIL", shipment.getShipper().getEmail());
+            parameters.put("LOGO_URL", REPORTS_PATH + Util.imagePath );
+            parameters.put("SHIPPER_INV_NO", shipment.getInvoiceNo());
+            parameters.put("FREIGHT_CURRENCY", currComboBox.getValue().getCurrencyName());
+            parameters.put("CONVERSION_RATE", conversionRate.getValue().toPlainString());
+            parameters.put("FREIGHT_RATE", ratePerContField.getValue().toPlainString());
+            parameters.put("TOTAL_FREIGHT", totalFreight.getValue().toPlainString());
+            parameters.put("FREIGHT_LOCAL", freightInBDT.getValue().toPlainString());
+            parameters.put("GOODS_DESCRIPTION", goodDescription.getValue());
+            parameters.put("DESC_2", otherField1.getValue());
+            parameters.put("DESC_2_AMT", otherCost1Amt.getValue().toPlainString());
+            parameters.put("DESC_3", otherField2.getValue());
+            parameters.put("DESC_3_AMT", otherCost2Amt.getValue().toPlainString());
+            parameters.put("TOTAL", total.getValue().toPlainString());
+            parameters.put("TOTAL_IN_WORD", inWords.getText());
+            parameters.put("BANK_NAME", bankName.getValue());
+            parameters.put("AC_NAME", acName.getValue());
+            parameters.put("AC_NO", acNo.getValue());
+            parameters.put("ROUTING_NO", routingNo.getValue());
+            parameters.put("BRANCH", branch.getValue());
+            parameters.put("SIGNED_BY", preparedBy.getValue());
+            parameters.put("SIGNED_BY_EMAIL", preparedByEmail.getValue());
+            parameters.put("SIGNED_BY_CONTACT", contact.getValue());
+            parameters.put("EXP_NO", expNo.getValue());
+            parameters.put("EXP_DATE", getFormattedDate(expDate.getValue()));
+            parameters.put("VESSEL", shipment.getSchedule().getFeederVesselName());
+
+
             try (FileInputStream stream = new FileInputStream(REPORTS_PATH + "Invoice.jasper")) {
-                final Map<String, Object> parameters = prepareParamsForInvoice(shipment, dto);
+//                final Map<String, Object> params = prepareParamsForInvoice(shipment);
                 return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
             } catch (JRException | IOException e) {
-                Util.getNotificationForError("Null value found for mandatory record. Please fill up mandatory records properly.").open();
                 throw new RuntimeException(e);
             }
         }), "");
@@ -756,12 +804,12 @@ public class ShowShipmentView extends VerticalLayout {
 
         horizontalLayout.add(inWords);
         FormLayout invoiceForm = new FormLayout();
-        invoiceForm.add(currComboBox, conversionRate, gap0, line1, goodDescription, numOfContainer, ratePerContField,
+        invoiceForm.add(currComboBox, conversionRate, expNo, expDate, gap0, line1, goodDescription, numOfContainer, ratePerContField,
                 totalFreight, freightInBDT, line2, otherField1, gap1, otherCost1Amt, line3, otherField2, gap2,
                 otherCost2Amt, line3, horizontalLayout, gap3, total);
 
         invoiceForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 5));
-        invoiceForm.setColspan(gap0, 3);
+        //invoiceForm.setColspan(gap0, 1);
         invoiceForm.setColspan(line1, 5);
         invoiceForm.setColspan(line2, 5);
         invoiceForm.setColspan(gap1, 3);
@@ -776,7 +824,27 @@ public class ShowShipmentView extends VerticalLayout {
         contactForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 2));
         contactForm.setMaxWidth("50%");
 
+        ConfirmDialog confirmDialog = new ConfirmDialog();
+        confirmDialog.setHeader("Unsaved changes");
+        confirmDialog.setText(
+                "Edited data will be lost. Are you sure you want to close ?");
+
+        confirmDialog.setCancelable(true);
+        confirmDialog.setCancelButtonTheme("primary");
+        confirmDialog.addCancelListener(event -> confirmDialog.close());
+
+        confirmDialog.setConfirmText("Close Invoice Maker");
+        confirmDialog.setConfirmButtonTheme("error primary");
+        confirmDialog.addConfirmListener(event -> dialog.close());
+
+        Button closeButton = new Button("Close", e -> {
+            confirmDialog.open();
+        });
+        closeButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+
         dialog.add(title, invoiceForm, contactForm);
+        dialog.getFooter().add(anchor);
+        dialog.getFooter().add(closeButton);
 
         return dialog;
     }

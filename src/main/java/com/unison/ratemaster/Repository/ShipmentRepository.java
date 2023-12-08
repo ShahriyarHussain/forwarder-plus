@@ -15,4 +15,7 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
     List<Shipment> getAllShipmentOrderedByCreateDate();
     @Query("select s.masterBl from Shipment s where s.blNo = :blNo")
     byte[] getPdf(@Param("blNo") String blNo);
+
+    @Query(value = "SELECT nextval('INVOICE_NO_SEQ')", nativeQuery = true)
+    String getInvoiceNoSequence();
 }

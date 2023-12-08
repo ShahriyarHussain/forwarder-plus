@@ -26,6 +26,7 @@ public class Shipment {
     private String shipperMarks;
     @Length(max = 1000)
     private String goodsDescription;
+    private String shipmentInvoiceNo;
     @Length(max = 100)
     private String invoiceNo;
     private ShipmentStatus status;

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -22,23 +23,31 @@ public class ShipmentService {
         shipmentRepository.save(shipment);
     }
 
+
     @Transactional
     public void saveEditedShipment(Shipment shipment) {
         shipmentRepository.save(shipment);
     }
+
 
     @Transactional
     public void deleteShipmentAndBooking(Shipment shipment) {
         shipmentRepository.delete(shipment);
     }
 
+
     @Transactional
     public List<Shipment> getAllShipments() {
         return shipmentRepository.getAllShipmentOrderedByCreateDate();
     }
 
+
     @Transactional
     public byte[] getPdf(String blNo) {
         return shipmentRepository.getPdf(blNo);
     }
+
+    public String getInvoiceNo() {
+        return "USL-EXP-" + shipmentRepository.getInvoiceNoSequence() + "-" + LocalDate.now().getYear();
+    };
 }

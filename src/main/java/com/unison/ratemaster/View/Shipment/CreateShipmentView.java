@@ -39,16 +39,9 @@ public class CreateShipmentView extends VerticalLayout {
     public CreateShipmentView(@Autowired ShipmentService shipmentService,
                               @Autowired ClientService clientService,
                               @Autowired ScheduleService scheduleService,
-                              @Autowired CommodityService commodityService,
-                              @Autowired BookingService bookingService) {
+                              @Autowired CommodityService commodityService) {
 
         H2 title = new H2("Create Shipment");
-
-//        ComboBox<Booking> bookings = new ComboBox<>("Choose Booking");
-//        bookings.setItems(bookingService.getLatestBooking());
-//        bookings.setItemLabelGenerator(booking -> booking.getBookingNo() + "-"
-//                + booking.getNumOfContainers() + " x " + booking.getContainerSize().getContainerSize());
-//        bookings.setWidthFull();
 
         TextField name = new TextField("Shipment Name");
         name.setRequired(true);
@@ -60,7 +53,7 @@ public class CreateShipmentView extends VerticalLayout {
         shipperMarks.setHeight(10, Unit.EM);
 
         TextField bookingNo = new TextField("Booking No");
-        TextField invoiceNo = new TextField("Invoice No");
+        TextField invoiceNo = new TextField("Shipper Invoice No");
 
         ComboBox<ContainerType> containerType = new ComboBox<>("Container Type:");
         containerType.setItems(ContainerType.values());
@@ -96,19 +89,6 @@ public class CreateShipmentView extends VerticalLayout {
         commodities.setItems(commodityService.getAllCommodity());
         commodities.setItemLabelGenerator(Commodity::getCommoditySummary);
 
-//        bookings.addValueChangeListener(event -> {
-//            this.booking = event.getSource().getValue();
-//            if (this.booking != null) {
-//                bookingNo.setValue(this.booking.getBookingNo());
-//                containerType.setValue(this.booking.getContainerType());
-//                invoiceNo.setValue(this.booking.getInvoiceNo());
-//                stuffingDate.setValue(this.booking.getStuffingDate());
-//                stuffingDepot.setValue(this.booking.getStuffingDepot());
-//                numOfContainers.setValue(this.booking.getNumOfContainers());
-//                ratePerContainer.setValue(this.booking.getStuffingCostPerContainer());
-//            }
-//        });
-
         Upload upload = getUploadComponent();
 
         Button saveButton = new Button("Save", event -> {
@@ -127,6 +107,7 @@ public class CreateShipmentView extends VerticalLayout {
             shipment.setMasterBl(this.masterBl);
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
+            shipment.setShipmentInvoiceNo(shipmentService.getInvoiceNo());
 
             Booking booking = new Booking();
             booking.setBookingNo(bookingNo.getValue());

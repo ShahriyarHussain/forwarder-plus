@@ -20,6 +20,7 @@ public class Util {
     private static final BigDecimal thousand = BigDecimal.valueOf(1000);
     private static final BigDecimal lakh = BigDecimal.valueOf(100000);
     private static final BigDecimal crore = BigDecimal.valueOf(10000000);
+    public static final String imagePath = "logo_best.png";
 
     public static Notification getNotificationForError(String errorMessage) {
         Notification notification = new Notification();
@@ -133,4 +134,6 @@ public class Util {
         map.put("80", "Eighty");
         map.put("90", "Ninety");
     }
+
+
 }
