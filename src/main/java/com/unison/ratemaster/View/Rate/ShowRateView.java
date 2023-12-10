@@ -13,10 +13,12 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@Route(value = "show-rate", layout = MainView.class)
+@PageTitle("Search Rates")
+@Route(value = "search-rates", layout = MainView.class)
 public class ShowRateView extends VerticalLayout {
 
     public ShowRateView(@Autowired PortService portService, @Autowired RateService rateService) {

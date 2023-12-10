@@ -17,4 +17,7 @@ public class CarrierService {
         return carrierRepository.findAll();
     }
 
+    public void saveCarrier(Carrier carrier) {
+        carrierRepository.save(carrier);
+    }
 }

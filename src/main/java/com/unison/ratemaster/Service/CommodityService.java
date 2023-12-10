@@ -16,4 +16,8 @@ public class CommodityService {
     public List<Commodity> getAllCommodity() {
         return commodityRepository.findAll();
     }
+
+    public void saveCommodity(Commodity commodity) {
+        commodityRepository.save(commodity);
+    }
 }

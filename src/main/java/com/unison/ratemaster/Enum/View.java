@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 public enum View {
     CREATE_RATE("Create Rate"),
-    VIEW_RATE("View Rate"),
+    VIEW_RATE("Search Rate"),
     SCHEDULE_PANEL("Schedule Panel"),
     CREATE_SHIPMENT("Create Shipment"),
     VIEW_SHIPMENT("View Shipments"),
@@ -15,7 +15,9 @@ public enum View {
     ADD_BOOKING("Add Booking"),
     MANAGE_PARTIES("Add Parties"),
     ADD_OTHERS("Add Others"),
-    CREATE_BOOKING("Create Booking");//Add others includes Add Carrier, Add Commodity and Add Ports
+    CREATE_BOOKING("Create Booking"),
+    MISC_MANAGEMENT("Misc Management");
+    //Add others includes Add Carrier, Add Commodity and Add Ports
 
     private final String viewName;
 }

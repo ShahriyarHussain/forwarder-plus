@@ -1,4 +1,4 @@
-package com.unison.ratemaster.View.Client;
+package com.unison.ratemaster.View.Misc;
 
 import com.unison.ratemaster.Entity.Client;
 import com.unison.ratemaster.Enum.ClientType;
@@ -17,9 +17,11 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@PageTitle("View Shipments")
 @Route(value = "manage-party", layout = MainView.class)
 public class ManagePartyView extends VerticalLayout {
 

@@ -16,4 +16,8 @@ public class PortService {
     public List<Port> getPorts() {
         return portRepository.findAll();
     }
+
+    public void savePort(Port port) {
+        portRepository.save(port);
+    }
 }

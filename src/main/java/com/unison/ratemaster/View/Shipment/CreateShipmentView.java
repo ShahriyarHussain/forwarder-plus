@@ -19,6 +19,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -29,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 
+@PageTitle("New Shipment")
 @Route(value = "create-shipment", layout = MainView.class)
 public class CreateShipmentView extends VerticalLayout {
 
@@ -38,7 +40,8 @@ public class CreateShipmentView extends VerticalLayout {
                               @Autowired ClientService clientService,
                               @Autowired ScheduleService scheduleService,
                               @Autowired CommodityService commodityService,
-                              @Autowired InvoiceService invoiceService) {
+                              @Autowired InvoiceService invoiceService,
+                              @Autowired CarrierService carrierService) {
 
         H2 title = new H2("Create Shipment");
 
@@ -87,6 +90,10 @@ public class CreateShipmentView extends VerticalLayout {
 
         Upload upload = getUploadComponent();
 
+        ComboBox<Carrier> carrierComboBox = new ComboBox<>("Carrier");
+        carrierComboBox.setItems(carrierService.getAllCarriers());
+        carrierComboBox.setItemLabelGenerator(Carrier::getName);
+
         Button saveButton = new Button("Save", event -> {
             Shipment shipment = new Shipment();
             shipment.setName(name.getValue());
@@ -103,6 +110,7 @@ public class CreateShipmentView extends VerticalLayout {
             shipment.setMasterBl(this.masterBl);
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
+            shipment.setCarrier(carrierComboBox.getValue());
 
             Invoice invoice = new Invoice();
             invoice.setInvoiceNo(invoiceService.getInvoiceNo());
@@ -134,8 +142,8 @@ public class CreateShipmentView extends VerticalLayout {
 
         FormLayout formLayout = new FormLayout();
         formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize,
-                commodities, scheduleComboBox, shipper, consignee, notifyParty,
-                goodsDescription, shipperMarks, upload);
+                commodities, scheduleComboBox, shipper, consignee, notifyParty, carrierComboBox, upload,
+                goodsDescription, shipperMarks);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
         formLayout.setColspan(goodsDescription,2);
         formLayout.setColspan(shipperMarks,2);

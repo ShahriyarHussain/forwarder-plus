@@ -1,12 +1,9 @@
 package com.unison.ratemaster.View;
 
 import com.unison.ratemaster.Enum.View;
-import com.unison.ratemaster.View.BillOfLading.CreateBLView;
-import com.unison.ratemaster.View.Booking.CreateBookingView;
-import com.unison.ratemaster.View.Client.ManagePartyView;
+import com.unison.ratemaster.View.Misc.MiscManagementView;
 import com.unison.ratemaster.View.Rate.CreateRateView;
 import com.unison.ratemaster.View.Rate.ShowRateView;
-import com.unison.ratemaster.View.Schedule.CreateScheduleView;
 import com.unison.ratemaster.View.Shipment.CreateShipmentView;
 import com.unison.ratemaster.View.Shipment.ShowShipmentView;
 import com.vaadin.flow.component.applayout.AppLayout;
@@ -46,12 +43,13 @@ public class MainView extends AppLayout {
 
     private Tabs getTabs() {
         Tabs tabs = new Tabs();
-        tabs.add(createTab(VaadinIcon.PENCIL, View.CREATE_RATE),
-                createTab(VaadinIcon.LIST, View.VIEW_RATE),
-                createTab(VaadinIcon.PENCIL, View.CREATE_SHIPMENT),
-                createTab(VaadinIcon.LIST, View.VIEW_SHIPMENT),
-                createTab(VaadinIcon.PENCIL, View.CREATE_BILL_OF_LADING),
-                createTab(VaadinIcon.PENCIL, View.MANAGE_PARTIES));
+        tabs.add(createTab(VaadinIcon.BOOK, View.CREATE_RATE),
+                createTab(VaadinIcon.SEARCH, View.VIEW_RATE),
+                createTab(VaadinIcon.PLUS, View.CREATE_SHIPMENT),
+                createTab(VaadinIcon.GLOBE, View.VIEW_SHIPMENT),
+                createTab(VaadinIcon.DATABASE, View.MISC_MANAGEMENT)
+//                createTab(VaadinIcon.PENCIL, View.CREATE_BILL_OF_LADING),
+                );
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
         return tabs;
     }
@@ -72,24 +70,24 @@ public class MainView extends AppLayout {
             case VIEW_RATE:
                 link.setRoute(ShowRateView.class);
                 break;
-            case SCHEDULE_PANEL:
-                link.setRoute(CreateScheduleView.class);
-                break;
+//            case SCHEDULE_PANEL:
+//                link.setRoute(CreateScheduleView.class);
+//                break;
             case CREATE_SHIPMENT:
                 link.setRoute(CreateShipmentView.class);
                 break;
             case VIEW_SHIPMENT:
                 link.setRoute(ShowShipmentView.class);
                 break;
-            case CREATE_BOOKING:
-                link.setRoute(CreateBookingView.class);
+//            case MANAGE_PARTIES:
+//                link.setRoute(ManagePartyView.class);
+//                break;
+            case MISC_MANAGEMENT:
+                link.setRoute(MiscManagementView.class);
                 break;
-            case MANAGE_PARTIES:
-                link.setRoute(ManagePartyView.class);
-                break;
-            case CREATE_BILL_OF_LADING:
-                link.setRoute(CreateBLView.class);
-                break;
+//            case CREATE_BILL_OF_LADING:
+//                link.setRoute(CreateBLView.class);
+//                break;
             default:
                 break;
         }

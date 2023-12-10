@@ -27,6 +27,7 @@ import com.vaadin.flow.component.textfield.*;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
@@ -48,6 +49,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 
+@PageTitle("View Shipments")
 @Route(value = "show-shipment", layout = MainView.class)
 public class ShowShipmentView extends VerticalLayout {
 
@@ -61,7 +63,8 @@ public class ShowShipmentView extends VerticalLayout {
                             @Autowired PortService portService,
                             @Autowired BookingService bookingService,
                             @Autowired CommodityService commodityService,
-                            @Autowired InvoiceService invoiceService) {
+                            @Autowired InvoiceService invoiceService,
+                            @Autowired CarrierService carrierService) {
 
         H2 title = new H2("View Shipment");
 
@@ -114,7 +117,8 @@ public class ShowShipmentView extends VerticalLayout {
         GridContextMenu<Shipment> menu = grid.addContextMenu();
         menu.addItem("Edit Shipment", event -> {
             if (event.getItem().isPresent()) {
-                createEditDialog(event.getItem().get(), clientService, shipmentService, scheduleService, commodityService).open();
+                createEditDialog(event.getItem().get(), clientService, shipmentService, scheduleService,
+                        commodityService, carrierService).open();
             }
         });
         menu.addItem("Edit Schedule", event -> {
@@ -255,7 +259,7 @@ public class ShowShipmentView extends VerticalLayout {
 
     private Dialog createEditDialog(Shipment shipment, ClientService clientService,
                                     ShipmentService shipmentService, ScheduleService scheduleService,
-                                    CommodityService commodityService) {
+                                    CommodityService commodityService, CarrierService carrierService) {
 
         Dialog dialog = new Dialog();
 
@@ -323,6 +327,10 @@ public class ShowShipmentView extends VerticalLayout {
         statusComboBox.setItemLabelGenerator(ShipmentStatus::name);
         statusComboBox.setValue(shipment.getStatus());
 
+        ComboBox<Carrier> carrierComboBox = new ComboBox<>("Carrier");
+        carrierComboBox.setItems(carrierService.getAllCarriers());
+        carrierComboBox.setItemLabelGenerator(Carrier::getName);
+
         Upload upload = getUpload();
 
         Button saveButton = new Button("Save", event -> {
@@ -362,7 +370,8 @@ public class ShowShipmentView extends VerticalLayout {
 
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize,
-                commodities, scheduleComboBox, shipper, consignee, notifyParty, goodsDescription, shipperMarks, upload);
+                commodities, scheduleComboBox, shipper, consignee, notifyParty, carrierComboBox, upload,
+                goodsDescription, shipperMarks);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
 
         formLayout.setColspan(goodsDescription, 2);
@@ -443,7 +452,7 @@ public class ShowShipmentView extends VerticalLayout {
         stuffingDate.setValue(booking.getStuffingDate());
 
         TextField stuffingDepot = new TextField("Stuffing Depot");
-        stuffingDepot.setValue(booking.getStuffingDepot());
+        stuffingDepot.setValue(booking.getStuffingDepot() == null ? "" : booking.getStuffingDepot());
 
         BigDecimalField stuffingCost = new BigDecimalField("Stuffing Cost/Container");
         stuffingCost.setValue(booking.getStuffingCostPerContainer());
