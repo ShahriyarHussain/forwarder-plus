@@ -5,6 +5,8 @@ import com.unison.ratemaster.Entity.Rate;
 import com.unison.ratemaster.Service.PortService;
 import com.unison.ratemaster.Service.RateService;
 import com.unison.ratemaster.View.MainView;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.H2;
@@ -30,13 +32,22 @@ public class ShowRateView extends VerticalLayout {
                 .setTooltipGenerator(rate -> rate.getPortOfDestination().getPortCity() +", "+ rate.getPortOfDestination().getPortCountry());
 
         //grid.addColumn(Rate::getCommodity, "commodity").setHeader("Commodity");
-        grid.addColumn(Rate::getTerm, "term").setHeader("Term").setSortable(false);
+        grid.addColumn(Rate::getTerm, "term").setHeader("Term");
         grid.addColumn(Rate::getTwentyFtRate, "rate20").setHeader("20' Rate");
         grid.addColumn(Rate::getFortyFtRate, "rate40").setHeader("40' Rate");
         grid.addColumn(Rate::getFortyFtHQRate, "rate40h").setHeader("40' HC Rate");
         grid.addColumn(Rate::getValidity, "validity").setHeader("Validity");
-        grid.addColumn(Rate::getRemarks, "remarks").setHeader("Remarks").setSortable(false);
+        grid.addColumn(Rate::getRemarks, "remarks").setHeader("Remarks");
+        grid.addComponentColumn(rate -> {
+            Button button = new Button(new Icon(VaadinIcon.TRASH), event -> {
+                rateService.deleteRate(rate);
+                grid.setItems(rateService.getValidRates());
+            });
+            button.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            return button;
+        }).setHeader("Delete");
         GridListDataView<Rate> dataView = grid.setItems(rateService.getValidRates());
+
 
         TextField searchField = new TextField();
         searchField.setWidth("50%");

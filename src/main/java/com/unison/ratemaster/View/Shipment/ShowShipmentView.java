@@ -1,9 +1,9 @@
 package com.unison.ratemaster.View.Shipment;
 
-import com.unison.ratemaster.Dto.InvoiceDto;
 import com.unison.ratemaster.Entity.*;
 import com.unison.ratemaster.Enum.*;
 import com.unison.ratemaster.Service.*;
+import com.unison.ratemaster.Util.ShipmentFilter;
 import com.unison.ratemaster.Util.Util;
 import com.unison.ratemaster.View.MainView;
 import com.vaadin.flow.component.Component;
@@ -17,7 +17,9 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.contextmenu.GridContextMenu;
+import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -64,25 +66,29 @@ public class ShowShipmentView extends VerticalLayout {
                             @Autowired BookingService bookingService,
                             @Autowired CommodityService commodityService,
                             @Autowired InvoiceService invoiceService,
-                            @Autowired CarrierService carrierService) {
+                            @Autowired CarrierService carrierService,
+                            @Autowired BankDetailsService bankDetailsService,
+                            @Autowired ContactDetailsService contactDetailsService) {
 
         H2 title = new H2("View Shipment");
 
         Grid<Shipment> grid = new Grid<>();
-        grid.addColumn(Shipment::getBlNo).setHeader("B/L No.").setSortable(false).setFrozen(true).setAutoWidth(true);
-        grid.addColumn(shipment -> shipment.getBooking().getBookingNo()).setHeader("Booking").setAutoWidth(true);
-        grid.addColumn(Shipment::getInvoiceNo).setHeader("Shipper Invoice").setAutoWidth(true);
-        grid.addColumn(shipment -> shipment.getInvoice().getInvoiceNo()).setHeader("Invoice").setAutoWidth(true);
-        grid.addColumn(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName(), "name")
-                .setHeader("Shipper")
+        Grid.Column<Shipment> blColumn = grid.addColumn(Shipment::getBlNo).setSortable(false).setFrozen(true).setAutoWidth(true);
+        Grid.Column<Shipment> bookingColumn = grid.addColumn(shipment -> shipment.getBooking().getBookingNo()).setAutoWidth(true);
+        Grid.Column<Shipment> shipperInvoiceColumn = grid.addColumn(Shipment::getInvoiceNo).setAutoWidth(true);
+        Grid.Column<Shipment> invoiceColumn = grid.addColumn(shipment -> shipment.getInvoice().getInvoiceNo()).setAutoWidth(true);
+        Grid.Column<Shipment> shipperColumn = grid.addColumn(shipment ->
+                        shipment.getShipper() == null ? "" : shipment.getShipper().getName())
                 .setTooltipGenerator(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName());
-        grid.addColumn(shipment -> shipment.getBooking().getNumOfContainers() + "x" +
-                shipment.getBooking().getContainerSize().getContainerSize()).setHeader("Container").setAutoWidth(true);
-        grid.addColumn(shipment -> shipment.getStatus().name()).setHeader("Status").setAutoWidth(true);
-        grid.addColumn(shipment -> shipment.getCreatedOn().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setHeader("Created").setSortable(true);
-        grid.addColumn(shipment -> shipment.getLastUpdated().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setHeader("Updated").setSortable(true);
+        Grid.Column<Shipment> numOfContainerColumn = grid.addColumn(shipment -> shipment.getBooking().getNumOfContainers() + "x" +
+                shipment.getBooking().getContainerSize().getContainerSize()).setAutoWidth(true);
+        Grid.Column<Shipment> statusColumn = grid.addColumn(shipment -> shipment.getStatus().name()).setAutoWidth(true);
+        Grid.Column<Shipment> createdColumn = grid.addColumn(shipment -> shipment.getCreatedOn()
+                .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true).setAutoWidth(true);
+        Grid.Column<Shipment> lastUpdateColumn = grid.addColumn(shipment -> shipment.getLastUpdated()
+                .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true).setAutoWidth(true);
 
-        grid.addComponentColumn(shipment -> {
+        Grid.Column<Shipment> mblColumn = grid.addComponentColumn(shipment -> {
             Button downloadButton = new Button(new Icon(VaadinIcon.DOWNLOAD));
             Anchor anchor = new Anchor(new StreamResource(shipment.getBlNo() + ".pdf", (InputStreamFactory) () -> {
                 try {
@@ -96,24 +102,56 @@ public class ShowShipmentView extends VerticalLayout {
             anchor.getElement().setAttribute("download", true);
             anchor.add(downloadButton);
             return anchor;
-        }).setHeader("Download B/L");
+        }).setTooltipGenerator(shipment -> shipment.getMasterBl() == null ? "B/L Not Found" : "").setAutoWidth(true);
 
-        grid.addComponentColumn(shipment -> {
+        Grid.Column<Shipment>  shipmentAdvColumn = grid.addComponentColumn(shipment -> {
             Anchor anchor = new Anchor(new StreamResource(shipment.getBooking().getBookingNo() + ".pdf", (InputStreamFactory) () -> {
-                try (FileInputStream stream = new FileInputStream(REPORTS_PATH + "shipment_advice.jasper")) {
-                    final Map<String, Object> parameters = prepareParamsForShipmentAdvice(shipment);
+                final Map<String, Object> parameters = prepareParamsForShipmentAdvice(shipment);
+                String report = "shipment_advice.jasper";
+                if (parameters.get("TS2_PORT") != null) {
+                    report = "shipment_advice_ts.jasper";
+                }
+                try (FileInputStream stream = new FileInputStream(REPORTS_PATH + report)) {
                     return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
                 } catch (JRException | IOException e) {
-                    Util.getNotificationForError("Null value found for mandatory record. Please fill up mandatory records properly.").open();
                     throw new RuntimeException(e);
                 }
             }), "");
             anchor.getElement().setAttribute("download", true);
             anchor.add(new Button(new Icon(VaadinIcon.DOWNLOAD)));
             return anchor;
-        }).setHeader("Download Advice");
+        }).setAutoWidth(true);
 
-        grid.setItems(shipmentService.getAllShipments());
+        GridListDataView<Shipment> dataView = grid.setItems(shipmentService.getAllShipments());
+        ShipmentFilter shipmentFilter = new ShipmentFilter(dataView);
+
+        grid.getHeaderRows().clear();
+        HeaderRow headerRow = grid.appendHeaderRow();
+
+        headerRow.getCell(blColumn).setComponent(
+                createFilterHeader("BL No", shipmentFilter::setBlNo));
+        headerRow.getCell(bookingColumn).setComponent(
+                createFilterHeader("Booking No", shipmentFilter::setBookingNo));
+        headerRow.getCell(shipperInvoiceColumn).setComponent(
+                createFilterHeader("Shipper Invoice No", shipmentFilter::setShipperInvoiceNo));
+        headerRow.getCell(invoiceColumn).setComponent(
+                createFilterHeader("Invoice No", shipmentFilter::setInvoiceNo));
+        headerRow.getCell(shipperColumn).setComponent(
+                createNonFilterHeader("Shipper"));
+        headerRow.getCell(numOfContainerColumn).setComponent(
+                createNonFilterHeader("Booking No"));
+        headerRow.getCell(statusColumn).setComponent(
+                createNonFilterHeader("Shipper Invoice No"));
+        headerRow.getCell(createdColumn).setComponent(
+                createNonFilterHeader("Created"));
+        headerRow.getCell(lastUpdateColumn).setComponent(
+                createNonFilterHeader("Updated"));
+        headerRow.getCell(mblColumn).setComponent(
+                createNonFilterHeader("MB/L"));
+        headerRow.getCell(shipmentAdvColumn).setComponent(
+                createNonFilterHeader("Ship. Adv."));
+
+
         GridContextMenu<Shipment> menu = grid.addContextMenu();
         menu.addItem("Edit Shipment", event -> {
             if (event.getItem().isPresent()) {
@@ -134,7 +172,7 @@ public class ShowShipmentView extends VerticalLayout {
         menu.add(new Hr());
         menu.addItem("Create Invoice", event -> {
             if (event.getItem().isPresent()) {
-                createInvoiceMakerDialog(event.getItem().get(), invoiceService).open();
+                createInvoiceMakerDialog(event.getItem().get(), invoiceService, bankDetailsService, contactDetailsService).open();
             }
         });
         menu.add(new Hr());
@@ -143,7 +181,6 @@ public class ShowShipmentView extends VerticalLayout {
             shipmentService.deleteShipmentAndBooking(event.getItem().get());
             grid.setItems(shipmentService.getAllShipments());
         });
-
 
         VerticalLayout layout = new VerticalLayout(grid);
         layout.setPadding(false);
@@ -177,6 +214,13 @@ public class ShowShipmentView extends VerticalLayout {
         paramMap.put("DEST_ETA", getFormattedDate(shipment.getSchedule().getDestinationPortEta()));
         paramMap.put("FEEDER", shipment.getSchedule().getFeederVesselName());
         paramMap.put("MOTHER", shipment.getSchedule().getMotherVesselName());
+
+        //TS2 Addition
+        if (shipment.getSchedule().getTs2Port() != null) {
+            paramMap.put("TS2_PORT", shipment.getSchedule().getTs2Port().getPortName());
+            paramMap.put("TS2_ETA", getFormattedDate(shipment.getSchedule().getTs2PortEta()));
+            paramMap.put("TS_MOTHER", shipment.getSchedule().getTsVesselName());
+        }
 
         paramMap.put("SEAL_NO", getSealNo(shipment.getBooking()));
         paramMap.put("CONTAINERS", getContainers(shipment.getBooking()));
@@ -240,7 +284,7 @@ public class ShowShipmentView extends VerticalLayout {
                                          Consumer<String> filterChangeConsumer) {
         Label label = new Label(labelText);
         label.getStyle().set("padding-top", "var(--lumo-space-m)")
-                .set("font-size", "var(--lumo-font-size-xs)");
+                .set("font-size", "var(--lumo-font-size-s)");
         TextField textField = new TextField();
         textField.setValueChangeMode(ValueChangeMode.EAGER);
         textField.setClearButtonVisible(true);
@@ -253,6 +297,16 @@ public class ShowShipmentView extends VerticalLayout {
         layout.getThemeList().clear();
         layout.getThemeList().add("spacing-xs");
 
+        return layout;
+    }
+
+    private Component createNonFilterHeader(String labelText) {
+        Label label = new Label(labelText);
+        label.getStyle().set("padding-top", "var(--lumo-space-m)")
+                .set("font-size", "var(--lumo-font-size-m)");
+        VerticalLayout layout = new VerticalLayout(label);
+        layout.getThemeList().clear();
+        layout.getThemeList().add("spacing-xs");
         return layout;
     }
 
@@ -589,6 +643,18 @@ public class ShowShipmentView extends VerticalLayout {
             }
         });
 
+        TextField ts2VesselName = new TextField("TS2 Vessel Name");
+        ComboBox<Port> ts2Port = Util.getPortComboBoxByItemListAndTitle(portList, "Transshipment 2 Port");
+        DatePicker ts2PortEta = new DatePicker(ts2Port.getLabel() + " ETA");
+        ts2Port.addValueChangeListener(event -> {
+            ts2VesselName.setRequired(false);
+            if (event != null && event.getValue() != null) {
+                Port vesselPort = event.getValue();
+                ts2VesselName.setRequired(true);
+                ts2PortEta.setLabel("ETA " + vesselPort.getPortCity());
+            }
+        });
+
         ComboBox<Port> destinationPort = Util.getPortComboBoxByItemListAndTitle(portList, "Destination Port");
         DatePicker destinationPortEta = new DatePicker(destinationPort.getLabel() + " ETA");
         destinationPortEta.setRequired(true);
@@ -607,7 +673,6 @@ public class ShowShipmentView extends VerticalLayout {
             portOfLoading.setValue(schedule.getPortOfLoading());
             polEta.setValue(schedule.getLoadingPortEta());
             polEtd.setValue(schedule.getLoadingPortEtd());
-
             motherVesselName.setValue(schedule.getMotherVesselName());
             motherVesselPort.setValue(schedule.getMotherVesselPort());
             mvPortEta.setValue(schedule.getMvPortFeederEta());
@@ -616,6 +681,11 @@ public class ShowShipmentView extends VerticalLayout {
             tsPortEta.setValue(schedule.getTsPortEta());
             destinationPort.setValue(schedule.getPortOfDestination());
             destinationPortEta.setValue(schedule.getDestinationPortEta());
+            if (schedule.getTs2Port() != null) {
+                ts2VesselName.setValue(schedule.getTsVesselName());
+                ts2PortEta.setValue(schedule.getTs2PortEta());
+                ts2Port.setValue(schedule.getTs2Port());
+            }
             addButton.setText("Save");
         }
 
@@ -637,6 +707,10 @@ public class ShowShipmentView extends VerticalLayout {
             newSchedule.setPortOfDestination(destinationPort.getValue());
             newSchedule.setDestinationPortEta(destinationPortEta.getValue());
 
+            newSchedule.setTsVesselName(ts2VesselName.getValue());
+            newSchedule.setTs2Port(ts2Port.getValue());
+            newSchedule.setTs2PortEta(ts2PortEta.getValue());
+
             Schedule editedSchedule = scheduleService.saveSchedule(newSchedule);
 
             shipment.setSchedule(editedSchedule);
@@ -649,7 +723,7 @@ public class ShowShipmentView extends VerticalLayout {
         });
 
         formLayout.add(feederVesselName, motherVesselName, portOfLoading, motherVesselPort, polEta, motherVesselPortEta,
-                polEtd, mvPortEta, tsPort, tsPortEta, destinationPort, destinationPortEta);
+                polEtd, mvPortEta, tsPort, tsPortEta, ts2VesselName, new Hr(), ts2Port, ts2PortEta, destinationPort, destinationPortEta);
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Button cancelButton = new Button("Close", e -> dialog.close());
 
@@ -660,7 +734,10 @@ public class ShowShipmentView extends VerticalLayout {
         return dialog;
     }
 
-    public Dialog createInvoiceMakerDialog(Shipment shipment, InvoiceService invoiceService) {
+    public Dialog createInvoiceMakerDialog(Shipment shipment, InvoiceService invoiceService,
+                                           BankDetailsService bankDetailsService,
+                                           ContactDetailsService contactDetailsService) {
+
         Invoice invoice = shipment.getInvoice();
 
         Dialog dialog = new Dialog();
@@ -724,40 +801,64 @@ public class ShowShipmentView extends VerticalLayout {
         otherCost2Amt.setValueChangeMode(ValueChangeMode.EAGER);
         otherCost2Amt.setValue(invoice.getOther2Amt());
 
-        TextField bankName = new TextField("Bank Name");
-        bankName.setValue(Objects.requireNonNullElse(invoice.getBankName(),""));
+        TextField otherField3 = new TextField("Other Cost Name 3:");
+        otherField3.setValue(Objects.requireNonNullElse(invoice.getOtherDesc3(), ""));
 
-        TextField acName = new TextField("A/C Name");
-        acName.setValue(Objects.requireNonNullElse(invoice.getAcName(), ""));
+        BigDecimalField otherCost3Amt = new BigDecimalField("Other Cost 3 Amount:", BigDecimal.ZERO, "Cannot be Empty");
+        otherCost3Amt.setValueChangeMode(ValueChangeMode.EAGER);
+        otherCost3Amt.setValue(invoice.getOther3Amt());
 
-        TextField acNo = new TextField("A/C No.");
-        acNo.setValue(Objects.requireNonNullElse(invoice.getAcNo(), ""));
+        TextField otherField4 = new TextField("Other Cost Name 4:");
+        otherField4.setValue(Objects.requireNonNullElse(invoice.getOtherDesc4(), ""));
 
-        TextField routingNo = new TextField("Routing No");
-        routingNo.setPattern("[0-9]*");
-        routingNo.setValue(Objects.requireNonNullElse(invoice.getRoutingNo(), ""));
+        BigDecimalField otherCost4Amt = new BigDecimalField("Other Cost 4 Amount:", BigDecimal.ZERO, "Cannot be Empty");
+        otherCost4Amt.setValueChangeMode(ValueChangeMode.EAGER);
+        otherCost4Amt.setValue(invoice.getOther4Amt());
 
-        TextField branch = new TextField("Branch Name");
-        branch.setValue(Objects.requireNonNullElse(invoice.getBranch(), ""));
+        ComboBox<BankDetails> bankDetailsComboBox = new ComboBox<>("Choose Bank Details");
+        bankDetailsComboBox.setItems(bankDetailsService.getAllBankDetails());
+        bankDetailsComboBox.setItemLabelGenerator(bankDetails -> bankDetails.getAccName() + " - " + bankDetails.getBankName()
+                + " - " + bankDetails.getBranchName() + " - " + bankDetails.getAccNo());
+        bankDetailsComboBox.setValue(invoice.getBankDetails());
 
-        TextField preparedBy = new TextField("Prepared By");
-        preparedBy.setValue(Objects.requireNonNullElse(invoice.getPreparedBy(), ""));
-
-        TextField preparedByEmail = new TextField("Email");
-        preparedByEmail.setValue(Objects.requireNonNullElse(invoice.getPreparedByEmail(), ""));
-
-        TextField contact = new TextField("Contact No:");
-        contact.setValue(Objects.requireNonNullElse(invoice.getPreparedByContact(), ""));
+        ComboBox<ContactDetails> contactDetailsComboBox = new ComboBox<>("Choose Contact Details");
+        contactDetailsComboBox.setItems(contactDetailsService.getAllContactDetails());
+        contactDetailsComboBox.setItemLabelGenerator(ContactDetails::getName);
+        contactDetailsComboBox.setValue(invoice.getContactDetails());
 
         otherCost1Amt.addValueChangeListener(e -> {
+            if (otherCost1Amt.getValue() == null) {
+                otherCost1Amt.setValue(BigDecimal.ZERO);
+            }
                     total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()));
+                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
                     inWords.setText(Util.getAmountInWords(total.getValue()));
                 }
         );
         otherCost2Amt.addValueChangeListener(e -> {
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()));
+            if (otherCost2Amt.getValue() == null) {
+                otherCost2Amt.setValue(BigDecimal.ZERO);
+            }
+            total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
+                    .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
+                    inWords.setText(Util.getAmountInWords(total.getValue()));
+                }
+        );
+        otherCost3Amt.addValueChangeListener(e -> {
+            if (otherCost3Amt.getValue() == null) {
+                otherCost3Amt.setValue(BigDecimal.ZERO);
+            }
+            total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
+                    .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
+                    inWords.setText(Util.getAmountInWords(total.getValue()));
+                }
+        );
+        otherCost4Amt.addValueChangeListener(e -> {
+            if (otherCost4Amt.getValue() == null) {
+                otherCost4Amt.setValue(BigDecimal.ZERO);
+            }
+            total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
+                    .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
                     inWords.setText(Util.getAmountInWords(total.getValue()));
                 }
         );
@@ -765,8 +866,8 @@ public class ShowShipmentView extends VerticalLayout {
                     totalFreight.setValue(e.getValue()
                             .multiply(BigDecimal.valueOf(numOfContainer.getValue())));
                     freightInBDT.setValue(totalFreight.getValue().multiply(conversionRate.getValue()));
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()));
+                    total.setValue(total.getValue().add(freightInBDT.getValue()).add(otherCost1Amt.getValue())
+                            .add(otherCost2Amt.getValue()).add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue()));
                     inWords.setText(Util.getAmountInWords(total.getValue()));
                 }
         );
@@ -783,18 +884,18 @@ public class ShowShipmentView extends VerticalLayout {
             invoice.setConversionRate(conversionRate.getValue());
             invoice.setCurrency(currComboBox.getValue());
             invoice.setGoodsDescription(goodDescription.getValue());
+
             invoice.setOtherDesc1(otherField1.getValue());
             invoice.setOther1Amt(otherCost1Amt.getValue());
             invoice.setOtherDesc2(otherField2.getValue());
             invoice.setOther2Amt(otherCost2Amt.getValue());
-            invoice.setBankName(bankName.getValue());
-            invoice.setAcName(acName.getValue());
-            invoice.setAcNo(acNo.getValue());
-            invoice.setRoutingNo(routingNo.getValue());
-            invoice.setBranch(branch.getValue());
-            invoice.setPreparedBy(preparedBy.getValue());
-            invoice.setPreparedByEmail(preparedByEmail.getValue());
-            invoice.setPreparedByContact(contact.getValue());
+            invoice.setOtherDesc3(otherField3.getValue());
+            invoice.setOther3Amt(otherCost3Amt.getValue());
+            invoice.setOtherDesc4(otherField4.getValue());
+            invoice.setOther4Amt(otherCost4Amt.getValue());
+
+            invoice.setBankDetails(bankDetailsComboBox.getValue());
+            invoice.setContactDetails(contactDetailsComboBox.getValue());
             invoiceService.saveInvoice(invoice);
             Util.getNotificationForSuccess("Saved Successfully").open();
         });
@@ -803,6 +904,9 @@ public class ShowShipmentView extends VerticalLayout {
         prepareInvoiceButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Anchor anchor = new Anchor(new StreamResource("Invoice" + shipment.getBlNo() + ".pdf", (InputStreamFactory) () -> {
             final Map<String, Object> parameters = new HashMap<>();
+
+            String reportName = "Invoice.jasper";
+
             parameters.put("BL_NO", shipment.getBlNo());
             parameters.put("ADDRESS", shipment.getShipper().getAddress());
             parameters.put("INVOICE_NO", shipment.getInvoice().getInvoiceNo());
@@ -830,23 +934,34 @@ public class ShowShipmentView extends VerticalLayout {
             parameters.put("DESC_2_AMT", otherCost1Amt.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
             parameters.put("DESC_3", otherField2.getValue());
             parameters.put("DESC_3_AMT", otherCost2Amt.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+
+            if (otherField3.getValue() != null && !otherField3.getValue().isEmpty()) {
+                reportName = "Invoice_row_3.jasper";
+                parameters.put("DESC_4", otherField3.getValue());
+                parameters.put("DESC_4_AMT", otherCost3Amt.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+            }
+            if (otherField4.getValue() != null && !otherField4.getValue().isEmpty()) {
+                reportName = "Invoice_row_4.jasper";
+                parameters.put("DESC_5", otherField4.getValue());
+                parameters.put("DESC_5_AMT", otherCost4Amt.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+            }
+
             parameters.put("TOTAL", total.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
             parameters.put("TOTAL_IN_WORD", inWords.getText());
-            parameters.put("BANK_NAME", bankName.getValue());
-            parameters.put("AC_NAME", acName.getValue());
-            parameters.put("AC_NO", acNo.getValue());
-            parameters.put("ROUTING_NO", routingNo.getValue());
-            parameters.put("BRANCH", branch.getValue());
-            parameters.put("SIGNED_BY", preparedBy.getValue());
-            parameters.put("SIGNED_BY_EMAIL", preparedByEmail.getValue());
-            parameters.put("SIGNED_BY_CONTACT", contact.getValue());
+            parameters.put("BANK_NAME", bankDetailsComboBox.getValue().getBankName());
+            parameters.put("AC_NAME", bankDetailsComboBox.getValue().getAccName());
+            parameters.put("AC_NO", bankDetailsComboBox.getValue().getAccNo());
+            parameters.put("ROUTING_NO", bankDetailsComboBox.getValue().getRoutingNo());
+            parameters.put("BRANCH", bankDetailsComboBox.getValue().getBranchName());
+            parameters.put("SIGNED_BY", contactDetailsComboBox.getValue().getName());
+            parameters.put("SIGNED_BY_EMAIL", contactDetailsComboBox.getValue().getEmail());
+            parameters.put("SIGNED_BY_CONTACT", contactDetailsComboBox.getValue().getContactNo());
             parameters.put("EXP_NO", expNo.getValue());
             parameters.put("EXP_DATE", getFormattedDate(expDate.getValue()));
             parameters.put("VESSEL", shipment.getSchedule().getFeederVesselName());
 
 
-            try (FileInputStream stream = new FileInputStream(REPORTS_PATH + "Invoice.jasper")) {
-//                final Map<String, Object> params = prepareParamsForInvoice(shipment);
+            try (FileInputStream stream = new FileInputStream(REPORTS_PATH + reportName)) {
                 return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
             } catch (JRException | IOException e) {
                 throw new RuntimeException(e);
@@ -869,12 +984,15 @@ public class ShowShipmentView extends VerticalLayout {
         Hr gap4 = new Hr();
         gap4.setMaxHeight("0");
         Hr line3 = new Hr();
+        Hr gap5 = new Hr();
+        gap4.setMaxHeight("0");
 
         horizontalLayout.add(inWords);
         FormLayout invoiceForm = new FormLayout();
-        invoiceForm.add(currComboBox, conversionRate, expNo, expDate, gap0, line1, goodDescription, numOfContainer, ratePerContField,
-                totalFreight, freightInBDT, line2, otherField1, gap1, otherCost1Amt, line3, otherField2, gap2,
-                otherCost2Amt, line3, horizontalLayout, gap3, total);
+        invoiceForm.add(currComboBox, conversionRate, expNo, expDate, gap0, line1, goodDescription, numOfContainer,
+                ratePerContField, totalFreight, freightInBDT, otherField1, gap1, otherCost1Amt, otherField2, gap2,
+                otherCost2Amt, otherField3, gap3, otherCost3Amt, otherField4, gap4, otherCost4Amt, line3,
+                horizontalLayout, gap5, total);
 
         invoiceForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 5));
         //invoiceForm.setColspan(gap0, 1);
@@ -883,15 +1001,28 @@ public class ShowShipmentView extends VerticalLayout {
         invoiceForm.setColspan(gap1, 3);
         invoiceForm.setColspan(gap2, 3);
         invoiceForm.setColspan(line3, 5);
-        invoiceForm.setColspan(gap3, 2);
-        invoiceForm.setColspan(gap4, 2);
+        invoiceForm.setColspan(gap3, 3);
+        invoiceForm.setColspan(gap4, 3);
+        invoiceForm.setColspan(gap5, 2);
         invoiceForm.setColspan(horizontalLayout, 2);
 
         FormLayout contactForm = new FormLayout();
-        contactForm.add(bankName, acName, acNo, routingNo, branch, preparedBy, preparedByEmail, contact);
+        contactForm.add(bankDetailsComboBox, contactDetailsComboBox);
         contactForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 2));
         contactForm.setMaxWidth("50%");
 
+        Button closeButton = getConfirmDialogButton(dialog);
+        closeButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+
+        dialog.add(title, invoiceForm, contactForm);
+        dialog.getFooter().add(closeButton);
+        dialog.getFooter().add(saveInvoiceButton);
+        dialog.getFooter().add(anchor);
+
+        return dialog;
+    }
+
+    private static Button getConfirmDialogButton(Dialog dialog) {
         ConfirmDialog confirmDialog = new ConfirmDialog();
         confirmDialog.setHeader("Unsaved changes");
         confirmDialog.setText(
@@ -905,20 +1036,6 @@ public class ShowShipmentView extends VerticalLayout {
         confirmDialog.setConfirmButtonTheme("error primary");
         confirmDialog.addConfirmListener(event -> dialog.close());
 
-        Button closeButton = new Button("Close", e -> {
-            confirmDialog.open();
-        });
-        closeButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-
-        dialog.add(title, invoiceForm, contactForm);
-        dialog.getFooter().add(closeButton);
-        dialog.getFooter().add(saveInvoiceButton);
-        dialog.getFooter().add(anchor);
-
-        return dialog;
-    }
-
-    private Map<String, Object> prepareParamsForInvoice(Shipment shipment, InvoiceDto invoiceDto) {
-        return new HashMap<>();
+        return new Button("Close", e -> confirmDialog.open());
     }
 }

@@ -29,9 +29,14 @@ public class Schedule {
     private Port motherVesselPort;
     private LocalDate motherVesselPortEta;
 
+    private String tsVesselName;
     @OneToOne
     private Port tsPort;
     private LocalDate tsPortEta;
+
+    @OneToOne
+    private Port ts2Port;
+    private LocalDate ts2PortEta;
 
     @OneToOne
     private Port portOfDestination;

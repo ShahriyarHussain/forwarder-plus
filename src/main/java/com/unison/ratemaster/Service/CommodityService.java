@@ -20,4 +20,8 @@ public class CommodityService {
     public void saveCommodity(Commodity commodity) {
         commodityRepository.save(commodity);
     }
+
+    public void deleteCommodity(Commodity commodity) {
+        commodityRepository.delete(commodity);
+    }
 }

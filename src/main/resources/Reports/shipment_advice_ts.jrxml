@@ -54,6 +54,9 @@
 	<parameter name="TS_PORT" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["Gioia Tauro"]]></defaultValueExpression>
 	</parameter>
+	<parameter name="TS2_PORT" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["King Abdullah"]]></defaultValueExpression>
+	</parameter>
 	<parameter name="DEST_PORT" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["Iskenderun"]]></defaultValueExpression>
 	</parameter>
@@ -72,6 +75,9 @@
 	<parameter name="TS_ETA" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["11-11-2023"]]></defaultValueExpression>
 	</parameter>
+	<parameter name="TS2_ETA" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["10-12-2023"]]></defaultValueExpression>
+	</parameter>
 	<parameter name="DEST_ETA" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["11-11-2023"]]></defaultValueExpression>
 	</parameter>
@@ -83,6 +89,9 @@
 	</parameter>
 	<parameter name="MOTHER" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["APL TARSKA XS 234Y"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="TS_MOTHER" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["HAHARE MAHARE"]]></defaultValueExpression>
 	</parameter>
 	<queryString>
 		<![CDATA[]]>
@@ -846,7 +855,7 @@ Chattogram Office: Faruk Chamber, 1403 Mujib Road, Agrabad, Chattogram.]]></text
 				<textFieldExpression><![CDATA[$P{MV_PORT_FEEDER_ETA}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="280" y="44" width="273" height="20" uuid="38a9f7f5-9b16-4a28-bfb0-c8a7872b64c9">
+				<reportElement x="273" y="44" width="280" height="20" uuid="38a9f7f5-9b16-4a28-bfb0-c8a7872b64c9">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<box topPadding="1" leftPadding="1" bottomPadding="1" rightPadding="1">
@@ -1017,7 +1026,7 @@ Chattogram Office: Faruk Chamber, 1403 Mujib Road, Agrabad, Chattogram.]]></text
 				<textFieldExpression><![CDATA["ETA " + $P{MV_CONNECT_PORT}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight">
-				<reportElement x="280" y="104" width="110" height="20" uuid="9a905f60-ce25-4114-ba7b-4014b8a4d781">
+				<reportElement x="273" y="104" width="117" height="20" uuid="9a905f60-ce25-4114-ba7b-4014b8a4d781">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<box topPadding="1" leftPadding="1" bottomPadding="1" rightPadding="1">
@@ -1034,7 +1043,7 @@ Chattogram Office: Faruk Chamber, 1403 Mujib Road, Agrabad, Chattogram.]]></text
 				<textFieldExpression><![CDATA["ETA " + $P{TS_PORT}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="280" y="84" width="110" height="20" uuid="e5b93f28-6c30-4d61-8a55-cbd4b4f36921">
+				<reportElement x="273" y="84" width="117" height="20" uuid="e5b93f28-6c30-4d61-8a55-cbd4b4f36921">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<box topPadding="1" leftPadding="1" bottomPadding="1" rightPadding="1">
@@ -1051,7 +1060,7 @@ Chattogram Office: Faruk Chamber, 1403 Mujib Road, Agrabad, Chattogram.]]></text
 				<textFieldExpression><![CDATA["ETA " + $P{MV_CONNECT_PORT}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight">
-				<reportElement x="280" y="164" width="110" height="32" uuid="f90df717-75b9-4850-ac64-d5592dd3535a">
+				<reportElement x="273" y="164" width="117" height="32" uuid="f90df717-75b9-4850-ac64-d5592dd3535a">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<box topPadding="1" leftPadding="1" bottomPadding="1" rightPadding="1">
@@ -1168,7 +1177,7 @@ CELL : +880 1708-672952]]></text>
 				<text><![CDATA[:]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="280" y="64" width="110" height="20" uuid="b67a5d65-39d4-429b-8f4f-6210b136abff">
+				<reportElement x="273" y="64" width="117" height="20" uuid="b67a5d65-39d4-429b-8f4f-6210b136abff">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<box topPadding="1" leftPadding="1" bottomPadding="1" rightPadding="1">
@@ -1185,7 +1194,7 @@ CELL : +880 1708-672952]]></text>
 				<textFieldExpression><![CDATA["Vessel TS1"]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight">
-				<reportElement x="280" y="124" width="110" height="20" uuid="466cb902-473b-43ee-b2cc-9716d2b6088d">
+				<reportElement x="273" y="124" width="117" height="20" uuid="466cb902-473b-43ee-b2cc-9716d2b6088d">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<box topPadding="1" leftPadding="1" bottomPadding="1" rightPadding="1">
@@ -1230,10 +1239,10 @@ CELL : +880 1708-672952]]></text>
 					<font fontName="Inter"/>
 					<paragraph leftIndent="5"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$P{TS_ETA}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$P{TS_MOTHER}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight">
-				<reportElement x="280" y="144" width="110" height="20" uuid="88ebc09f-4e1a-4e18-9da2-962b4556c431">
+				<reportElement x="273" y="144" width="117" height="20" uuid="88ebc09f-4e1a-4e18-9da2-962b4556c431">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<box topPadding="1" leftPadding="1" bottomPadding="1" rightPadding="1">
@@ -1247,7 +1256,7 @@ CELL : +880 1708-672952]]></text>
 					<font fontName="Inter"/>
 					<paragraph leftIndent="5"/>
 				</textElement>
-				<textFieldExpression><![CDATA["ETA " + $P{TS_PORT}]]></textFieldExpression>
+				<textFieldExpression><![CDATA["ETA " + $P{TS2_PORT}]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement x="390" y="144" width="10" height="20" uuid="ada354e1-643b-47a8-b652-4b03cb936dd9"/>
@@ -1278,7 +1287,7 @@ CELL : +880 1708-672952]]></text>
 					<font fontName="Inter"/>
 					<paragraph leftIndent="5"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$P{TS_ETA}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$P{TS2_ETA}]]></textFieldExpression>
 			</textField>
 		</band>
 	</summary>

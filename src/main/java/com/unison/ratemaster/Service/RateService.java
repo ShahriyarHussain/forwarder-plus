@@ -21,4 +21,8 @@ public class RateService {
     public List<Rate> getValidRates() {
         return rateRepository.findAllByValidityGreaterThan(LocalDate.now());
     }
+
+    public void deleteRate(Rate rate) {
+        rateRepository.delete(rate);
+    }
 }

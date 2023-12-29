@@ -20,4 +20,8 @@ public class PortService {
     public void savePort(Port port) {
         portRepository.save(port);
     }
+
+    public void deletePort(Port port) {
+        portRepository.delete(port);
+    }
 }

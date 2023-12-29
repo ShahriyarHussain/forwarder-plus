@@ -20,4 +20,8 @@ public class CarrierService {
     public void saveCarrier(Carrier carrier) {
         carrierRepository.save(carrier);
     }
+
+    public void deleteCarrier(Carrier carrier) {
+        carrierRepository.delete(carrier);
+    }
 }

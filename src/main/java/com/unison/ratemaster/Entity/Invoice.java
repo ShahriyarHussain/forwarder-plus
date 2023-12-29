@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.OneToOne;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -29,12 +30,12 @@ public class Invoice {
     private BigDecimal other1Amt;
     private String otherDesc2;
     private BigDecimal other2Amt;
-    private String bankName;
-    private String acName;
-    private String acNo;
-    private String routingNo;
-    private String branch;
-    private String preparedBy;
-    private String preparedByEmail;
-    private String preparedByContact;
+    private String otherDesc3;
+    private BigDecimal other3Amt;
+    private String otherDesc4;
+    private BigDecimal other4Amt;
+    @OneToOne
+    private BankDetails bankDetails;
+    @OneToOne
+    private ContactDetails contactDetails;
 }

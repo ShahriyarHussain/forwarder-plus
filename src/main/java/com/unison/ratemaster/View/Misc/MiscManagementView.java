@@ -1,15 +1,9 @@
 package com.unison.ratemaster.View.Misc;
 
 
-import com.unison.ratemaster.Entity.Carrier;
-import com.unison.ratemaster.Entity.Client;
-import com.unison.ratemaster.Entity.Commodity;
-import com.unison.ratemaster.Entity.Port;
+import com.unison.ratemaster.Entity.*;
 import com.unison.ratemaster.Enum.ClientType;
-import com.unison.ratemaster.Service.CarrierService;
-import com.unison.ratemaster.Service.ClientService;
-import com.unison.ratemaster.Service.CommodityService;
-import com.unison.ratemaster.Service.PortService;
+import com.unison.ratemaster.Service.*;
 import com.unison.ratemaster.Util.Util;
 import com.unison.ratemaster.View.MainView;
 import com.vaadin.flow.component.button.Button;
@@ -42,13 +36,15 @@ public class MiscManagementView extends VerticalLayout {
     public MiscManagementView(@Autowired PortService portService,
                               @Autowired CommodityService commodityService,
                               @Autowired CarrierService carrierService,
-                              @Autowired ClientService clientService) {
+                              @Autowired ClientService clientService,
+                              @Autowired BankDetailsService bankDetailsService,
+                              @Autowired ContactDetailsService contactDetailsService) {
 
-        H2 title = new H2("Ports, Commodity, Carrier Management");
+        H2 title = new H2("Ports, Commodity, Carrier, Banks and Contact Management");
         HorizontalLayout hlayout = new HorizontalLayout();
 
         ComboBox<String> chooseType = new ComboBox<>();
-        chooseType.setItems(List.of("Carriers", "Ports", "Commodities", "Clients"));
+        chooseType.setItems(List.of("Carriers", "Ports", "Commodities", "Clients", "Banking", "Contact"));
 
         Button viewButton = new Button("View Data");
         viewButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
@@ -64,6 +60,14 @@ public class MiscManagementView extends VerticalLayout {
         carrierGrid.setItems(carrierService.getAllCarriers());
         carrierGrid.addColumn(Carrier::getName).setHeader("Name").setAutoWidth(true).setSortable(true);
         carrierGrid.addColumn(Carrier::getCountry).setHeader("Country").setAutoWidth(true);
+        carrierGrid.addComponentColumn(carrier -> {
+            Button button = new Button(new Icon(VaadinIcon.TRASH), event -> {
+                carrierService.deleteCarrier(carrier);
+                carrierGrid.setItems(carrierService.getAllCarriers());
+            });
+            button.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            return button;
+        }).setHeader("Delete");
         carrierGrid.setVisible(false);
 
         H4 portTitle = new H4("Ports");
@@ -73,6 +77,14 @@ public class MiscManagementView extends VerticalLayout {
         portGrid.addColumn(Port::getPortName).setHeader("Name").setAutoWidth(true).setSortable(true);
         portGrid.addColumn(Port::getPortCountry).setHeader("Country").setAutoWidth(true);
         portGrid.addColumn(Port::getPortShortCode).setHeader("Short Code").setAutoWidth(true).setSortable(true);
+        portGrid.addComponentColumn(port -> {
+            Button button = new Button(new Icon(VaadinIcon.TRASH), event -> {
+                portService.deletePort(port);
+                portGrid.setItems(portService.getPorts());
+            });
+            button.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            return button;
+        }).setHeader("Delete");
         portGrid.setVisible(false);
 
         H4 commodityTitle = new H4("Commodities");
@@ -83,6 +95,14 @@ public class MiscManagementView extends VerticalLayout {
         commodityGrid.addColumn(Commodity::getName).setHeader("Name").setSortable(true).setAutoWidth(true);
         commodityGrid.addColumn(Commodity::getDescription).setHeader("Description").setSortable(true);
         commodityGrid.addColumn(commodity -> commodity.isDangerousGoods() ? "Yes" : "No").setHeader("DG").setAutoWidth(true);
+        commodityGrid.addComponentColumn(commodity -> {
+            Button button = new Button(new Icon(VaadinIcon.TRASH), event -> {
+                commodityService.deleteCommodity(commodity);
+                commodityGrid.setItems(commodityService.getAllCommodity());
+            });
+            button.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            return button;
+        }).setHeader("Delete");
         commodityGrid.setVisible(false);
 
         H4 clientTitle = new H4("Clients");
@@ -102,6 +122,43 @@ public class MiscManagementView extends VerticalLayout {
         }).setHeader("Delete");
         clientGrid.setVisible(false);
 
+        H4 bankTitle = new H4("Bank Details");
+        bankTitle.setVisible(false);
+        Grid<BankDetails> bankDetailsGrid = new Grid<>();
+        bankDetailsGrid.setItems(bankDetailsService.getAllBankDetails());
+        bankDetailsGrid.addColumn(BankDetails::getBankName).setHeader("Bank").setAutoWidth(true);
+        bankDetailsGrid.addColumn(BankDetails::getAccName).setHeader("Acc Name").setTooltipGenerator(BankDetails::getAccName);
+        bankDetailsGrid.addColumn(BankDetails::getAccNo).setHeader("Acc No").setAutoWidth(true);
+        bankDetailsGrid.addColumn(BankDetails::getRoutingNo).setHeader("Routing No").setAutoWidth(true);
+        bankDetailsGrid.addColumn(BankDetails::getBranchName).setHeader("Branch").setTooltipGenerator(BankDetails::getBranchName);
+        bankDetailsGrid.addComponentColumn(bankDetails -> {
+            Button button = new Button(new Icon(VaadinIcon.TRASH), event -> {
+                bankDetailsService.deleteBankDetails(bankDetails);
+                bankDetailsGrid.setItems(bankDetailsService.getAllBankDetails());
+            });
+            button.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            return button;
+        }).setHeader("Delete");
+        bankDetailsGrid.setVisible(false);
+
+        H4 contactTitle = new H4("Contact Details");
+        contactTitle.setVisible(false);
+        Grid<ContactDetails> contactDetailsGrid = new Grid<>();
+        contactDetailsGrid.setItems(contactDetailsService.getAllContactDetails());
+        contactDetailsGrid.addColumn(ContactDetails::getName).setHeader("Contact").setAutoWidth(true);
+        contactDetailsGrid.addColumn(ContactDetails::getEmail).setHeader("Email").setTooltipGenerator(ContactDetails::getEmail);
+        contactDetailsGrid.addColumn(ContactDetails::getContactNo).setHeader("Acc No").setAutoWidth(true);
+        contactDetailsGrid.addColumn(ContactDetails::getRemarks).setHeader("Branch").setTooltipGenerator(ContactDetails::getRemarks);
+        contactDetailsGrid.addComponentColumn(contactDetails -> {
+            Button button = new Button(new Icon(VaadinIcon.TRASH), event -> {
+                contactDetailsService.deleteContact(contactDetails);
+                contactDetailsGrid.setItems(contactDetailsService.getAllContactDetails());
+            });
+            button.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            return button;
+        }).setHeader("Delete");
+        contactDetailsGrid.setVisible(false);
+
         viewButton.addClickListener(event -> {
             if (chooseType.getValue().equals("Carriers")) {
                 carrierTitle.setVisible(true);
@@ -113,16 +170,25 @@ public class MiscManagementView extends VerticalLayout {
                 commodityGrid.setVisible(false);
                 clientTitle.setVisible(false);
                 clientGrid.setVisible(false);
+                bankTitle.setVisible(false);
+                bankDetailsGrid.setVisible(false);
+                contactTitle.setVisible(false);
+                contactDetailsGrid.setVisible(false);
                 editButton.setText("Add Carrier");
             } else if (chooseType.getValue().equals("Ports")) {
                 carrierTitle.setVisible(false);
                 carrierGrid.setVisible(false);
                 portTitle.setVisible(true);
                 portGrid.setVisible(true);
+                portGrid.setItems(portService.getPorts());
                 commodityTitle.setVisible(false);
                 commodityGrid.setVisible(false);
                 clientTitle.setVisible(false);
                 clientGrid.setVisible(false);
+                bankTitle.setVisible(false);
+                bankDetailsGrid.setVisible(false);
+                contactTitle.setVisible(false);
+                contactDetailsGrid.setVisible(false);
                 editButton.setText("Add Port");
             } else if (chooseType.getValue().equals("Commodities")) {
                 carrierTitle.setVisible(false);
@@ -131,8 +197,13 @@ public class MiscManagementView extends VerticalLayout {
                 portGrid.setVisible(false);
                 commodityTitle.setVisible(true);
                 commodityGrid.setVisible(true);
+                commodityGrid.setItems(commodityService.getAllCommodity());
                 clientTitle.setVisible(false);
                 clientGrid.setVisible(false);
+                bankTitle.setVisible(false);
+                bankDetailsGrid.setVisible(false);
+                contactTitle.setVisible(false);
+                contactDetailsGrid.setVisible(false);
                 editButton.setText("Add Commodity");
             } else if (chooseType.getValue().equals("Clients")) {
                 carrierTitle.setVisible(false);
@@ -143,7 +214,42 @@ public class MiscManagementView extends VerticalLayout {
                 commodityGrid.setVisible(false);
                 clientTitle.setVisible(true);
                 clientGrid.setVisible(true);
+                clientGrid.setItems(clientService.getAllClients());
+                bankTitle.setVisible(false);
+                bankDetailsGrid.setVisible(false);
+                contactTitle.setVisible(false);
+                contactDetailsGrid.setVisible(false);
                 editButton.setText("Add Clients");
+            } else if (chooseType.getValue().equals("Banking")) {
+                carrierTitle.setVisible(false);
+                carrierGrid.setVisible(false);
+                portTitle.setVisible(false);
+                portGrid.setVisible(false);
+                commodityTitle.setVisible(false);
+                commodityGrid.setVisible(false);
+                clientTitle.setVisible(false);
+                clientGrid.setVisible(false);
+                bankTitle.setVisible(true);
+                bankDetailsGrid.setVisible(true);
+                bankDetailsGrid.setItems(bankDetailsService.getAllBankDetails());
+                contactTitle.setVisible(false);
+                contactDetailsGrid.setVisible(false);
+                editButton.setText("Add Bank Details");
+            } else if (chooseType.getValue().equals("Contact")) {
+                carrierTitle.setVisible(false);
+                carrierGrid.setVisible(false);
+                portTitle.setVisible(false);
+                portGrid.setVisible(false);
+                commodityTitle.setVisible(false);
+                commodityGrid.setVisible(false);
+                clientTitle.setVisible(false);
+                clientGrid.setVisible(false);
+                bankTitle.setVisible(false);
+                bankDetailsGrid.setVisible(false);
+                contactTitle.setVisible(true);
+                contactDetailsGrid.setVisible(true);
+                contactDetailsGrid.setItems(contactDetailsService.getAllContactDetails());
+                editButton.setText("Add Contact Details");
             } else {
                 carrierTitle.setVisible(false);
                 carrierGrid.setVisible(false);
@@ -166,10 +272,15 @@ public class MiscManagementView extends VerticalLayout {
                 openCommoditiesDialogBox(commodityService).open();
             } else if (chooseType.getValue().equals("Clients")) {
                 openClientsDialogBox(clientService).open();
+            } else if (chooseType.getValue().equals("Banking")) {
+                openBankDetailsDialog(bankDetailsService).open();
+            } else if (chooseType.getValue().equals("Contact")) {
+                openContactDetailsDialog(contactDetailsService).open();
             }
         });
 
-        add(title, hlayout, carrierTitle, carrierGrid, portTitle, portGrid, commodityTitle, commodityGrid, clientTitle, clientGrid);
+        add(title, hlayout, carrierTitle, carrierGrid, portTitle, portGrid, commodityTitle, commodityGrid,
+                clientTitle, clientGrid, bankTitle, bankDetailsGrid, contactTitle, contactDetailsGrid);
 
     }
 
@@ -304,6 +415,72 @@ public class MiscManagementView extends VerticalLayout {
         });
 
         formLayout.add(carrierName, carrierCountry);
+        addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        dialog.add(title, formLayout);
+        dialog.getFooter().add(addButton);
+        dialog.getFooter().add(new Button("Close", event -> dialog.close()));
+        return dialog;
+    }
+
+    private Dialog openBankDetailsDialog(BankDetailsService bankDetailsService) {
+        Dialog dialog = new Dialog();
+        H3 title = new H3("Add Banking Details");
+
+        FormLayout formLayout = new FormLayout();
+
+        TextField bankName = new TextField("Bank Name");
+        TextField acNo = new TextField("A/C No");
+        TextField acName = new TextField("A/C Name");
+        TextField routingNo = new TextField("Routing No");
+        TextField branchName = new TextField("Branch Name");
+
+
+        Button addButton = new Button("Add", e -> {
+            BankDetails bankDetails = new BankDetails();
+            bankDetails.setBankName(bankName.getValue());
+            bankDetails.setAccNo(acNo.getValue());
+            bankDetails.setAccName(acName.getValue());
+            bankDetails.setRoutingNo(routingNo.getValue());
+            bankDetails.setBranchName(branchName.getValue());
+
+            bankDetailsService.saveBankDetails(bankDetails);
+            Util.getNotificationForSuccess("Bank Details Added!").open();
+        });
+
+        formLayout.add(bankName, acNo, acName, routingNo, branchName);
+        addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        dialog.add(title, formLayout);
+        dialog.getFooter().add(addButton);
+        dialog.getFooter().add(new Button("Close", event -> dialog.close()));
+        return dialog;
+    }
+
+    private Dialog openContactDetailsDialog(ContactDetailsService contactDetailsService) {
+        Dialog dialog = new Dialog();
+        H3 title = new H3("Add Contact Details");
+
+        FormLayout formLayout = new FormLayout();
+
+        TextField contactName = new TextField("Contact Name");
+        TextField contactNo = new TextField("Contact No");
+        TextField email = new TextField("Contact Email");
+        TextField remarks = new TextField("Remarks");
+
+
+        Button addButton = new Button("Add", e -> {
+            ContactDetails contactDetails = new ContactDetails();
+            contactDetails.setName(contactName.getValue());
+            contactDetails.setContactNo(contactNo.getValue());
+            contactDetails.setEmail(email.getValue());
+            contactDetails.setRemarks(remarks.getValue());
+
+            contactDetailsService.saveContactDetails(contactDetails);
+            Util.getNotificationForSuccess("Contact Details Added!").open();
+        });
+
+        formLayout.add(contactName, contactNo, email, remarks);
         addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         dialog.add(title, formLayout);

@@ -142,8 +142,8 @@ public class CreateShipmentView extends VerticalLayout {
 
         FormLayout formLayout = new FormLayout();
         formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize,
-                commodities, scheduleComboBox, shipper, consignee, notifyParty, carrierComboBox, upload,
-                goodsDescription, shipperMarks);
+                commodities, scheduleComboBox, shipper, consignee, notifyParty, goodsDescription, shipperMarks,
+                carrierComboBox, upload);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
         formLayout.setColspan(goodsDescription,2);
         formLayout.setColspan(shipperMarks,2);

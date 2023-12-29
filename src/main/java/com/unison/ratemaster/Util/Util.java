@@ -55,16 +55,33 @@ public class Util {
     }
 
     public static String getAmountInWords(BigDecimal amount) {
-        if (amount == null) {
+        if (amount.toPlainString().contains(".")) {
+            String [] splitAmount = amount.toPlainString().split("\\.");
+            BigDecimal nonDecimalAmount = new BigDecimal(splitAmount[0]);
+            BigDecimal decimalAmount = new BigDecimal(splitAmount[1]);
+            String nonDecimalPart = getRoundedAmountInWords(nonDecimalAmount) + " Taka ";
+            String decimalPart = getRoundedAmountInWords(decimalAmount);
+            decimalPart = decimalPart.equals("Zero") ? "" : decimalPart + " Paisa";
+            return "In Words: " + nonDecimalPart + decimalPart;
+        } else {
+            return "In Words: " + getRoundedAmountInWords(amount);
+        }
+    }
+
+    private static String getRoundedAmountInWords(BigDecimal amount) {
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) == 0) {
             return "Zero";
         }
         setMap();
+
+
         StringBuilder amountInWords = new StringBuilder();
         amount = amount.setScale(0, RoundingMode.DOWN);
 
         BigDecimal remainder = amount.divide(crore, 0, RoundingMode.DOWN);
         if (isNotZero(remainder)) {
-            amountInWords.append(getTwoDigitInWords(remainder)).append(" Crore ");
+            amountInWords.append(getRoundedAmountInWords(remainder)).append(" Crore ");
         }
         amount = amount.remainder(crore);
 
@@ -86,7 +103,7 @@ public class Util {
         }
         amount = amount.remainder(hundred);
         amountInWords.append(getTwoDigitInWords(amount));
-        return "In Words: " + amountInWords + " Taka Only";
+        return amountInWords.toString();
     }
 
     private static boolean isNotZero(BigDecimal bigDecimal) {
