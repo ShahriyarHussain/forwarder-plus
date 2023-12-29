@@ -17,15 +17,11 @@ import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
-import org.springframework.beans.factory.annotation.Value;
 
 
 @PageTitle("Main")
 @Route(value = "home")
 public class MainView extends AppLayout {
-
-    @Value("${company.name}")
-    private String companyName;
 
     public MainView() {
         createDrawer();
@@ -34,7 +30,7 @@ public class MainView extends AppLayout {
     public void createDrawer() {
         DrawerToggle toggle = new DrawerToggle();
 
-        H2 title = new H2(companyName == null ? "Forwarder+ V1.0": companyName);
+        H2 title = new H2("Unison Shipping Ltd.");
         Tabs tabs = getTabs();
 
         addToDrawer(tabs);

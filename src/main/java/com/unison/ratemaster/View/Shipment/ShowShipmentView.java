@@ -82,7 +82,8 @@ public class ShowShipmentView extends VerticalLayout {
                 .setTooltipGenerator(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName());
         Grid.Column<Shipment> numOfContainerColumn = grid.addColumn(shipment -> shipment.getBooking().getNumOfContainers() + "x" +
                 shipment.getBooking().getContainerSize().getContainerSize()).setAutoWidth(true);
-        Grid.Column<Shipment> statusColumn = grid.addColumn(shipment -> shipment.getStatus().name()).setAutoWidth(true);
+        Grid.Column<Shipment> statusColumn = grid.addColumn(shipment -> shipment.getStatus().name())
+                .setTooltipGenerator(Shipment::getName).setAutoWidth(true);
         Grid.Column<Shipment> createdColumn = grid.addColumn(shipment -> shipment.getCreatedOn()
                 .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true).setAutoWidth(true);
         Grid.Column<Shipment> lastUpdateColumn = grid.addColumn(shipment -> shipment.getLastUpdated()
@@ -141,7 +142,7 @@ public class ShowShipmentView extends VerticalLayout {
         headerRow.getCell(numOfContainerColumn).setComponent(
                 createNonFilterHeader("Booking No"));
         headerRow.getCell(statusColumn).setComponent(
-                createNonFilterHeader("Shipper Invoice No"));
+                createNonFilterHeader("Status"));
         headerRow.getCell(createdColumn).setComponent(
                 createNonFilterHeader("Created"));
         headerRow.getCell(lastUpdateColumn).setComponent(
@@ -417,15 +418,15 @@ public class ShowShipmentView extends VerticalLayout {
                 Util.getNotificationForSuccess("Shipment Saved Successfully!").open();
                 dialog.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 Util.getNotificationForError("Unexpected Error: " + e.getMessage()).open();
             }
         });
 
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize,
-                commodities, scheduleComboBox, shipper, consignee, notifyParty, carrierComboBox, upload,
-                goodsDescription, shipperMarks);
+                commodities, scheduleComboBox, shipper, consignee, notifyParty, goodsDescription, shipperMarks,
+                carrierComboBox, upload, statusComboBox);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
 
         formLayout.setColspan(goodsDescription, 2);
@@ -454,7 +455,7 @@ public class ShowShipmentView extends VerticalLayout {
                 masterBl = inputStream.readAllBytes();
 
             } catch (IOException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 Util.getNotificationForError("Error: " + e.getMessage()).open();
             }
         });
