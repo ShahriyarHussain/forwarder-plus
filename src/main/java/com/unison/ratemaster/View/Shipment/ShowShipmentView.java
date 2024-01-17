@@ -39,7 +39,6 @@ import net.sf.jasperreports.engine.JasperRunManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -57,7 +56,7 @@ public class ShowShipmentView extends VerticalLayout {
 
     byte[] masterBl;
 
-    private final String REPORTS_PATH = "Reports/";
+    private final String REPORTS_PATH = "/Reports/";
 
     public ShowShipmentView(@Autowired ShipmentService shipmentService,
                             @Autowired ClientService clientService,
@@ -112,8 +111,9 @@ public class ShowShipmentView extends VerticalLayout {
                 if (parameters.get("TS2_PORT") != null) {
                     report = "shipment_advice_ts.jasper";
                 }
-                try (FileInputStream stream = new FileInputStream(REPORTS_PATH + report)) {
-                    return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
+                try (InputStream stream = getClass().getResourceAsStream(REPORTS_PATH + report)) {
+                    return new ByteArrayInputStream(JasperRunManager
+                            .runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
                 } catch (JRException | IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -202,7 +202,7 @@ public class ShowShipmentView extends VerticalLayout {
         paramMap.put("COMMODITY", shipment.getCommodity().getName());
         paramMap.put("QUANTITY", calculateQuantity(shipment.getBooking()));
         paramMap.put("GROSS_WEIGHT", calculateWeight(shipment.getBooking()));
-        paramMap.put("LOGO_URL", REPORTS_PATH + Util.imagePath);
+        paramMap.put("LOGO_URL", Util.imagePath);
         paramMap.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortShortCode());
         paramMap.put("MV_CONNECT_PORT", shipment.getSchedule().getMotherVesselPort().getPortShortCode());
         paramMap.put("TS_PORT", shipment.getSchedule().getTsPort().getPortName());
@@ -385,6 +385,7 @@ public class ShowShipmentView extends VerticalLayout {
         ComboBox<Carrier> carrierComboBox = new ComboBox<>("Carrier");
         carrierComboBox.setItems(carrierService.getAllCarriers());
         carrierComboBox.setItemLabelGenerator(Carrier::getName);
+        carrierComboBox.setValue(shipment.getCarrier());
 
         Upload upload = getUpload();
 
@@ -747,7 +748,8 @@ public class ShowShipmentView extends VerticalLayout {
         H3 title = new H3("Prepare Invoice");
 
         IntegerField numOfContainer = new IntegerField("Containers");
-        numOfContainer.setValue(shipment.getBooking().getNumOfContainers());
+        numOfContainer.setValue(shipment.getBooking().getNumOfContainers() == null
+                ? 0 : shipment.getBooking().getNumOfContainers());
 
         TextField invoiceNo = new TextField("Invoice No");
         invoiceNo.setValue(invoice.getInvoiceNo());
@@ -762,23 +764,23 @@ public class ShowShipmentView extends VerticalLayout {
         inWords.setText(Util.getAmountInWords(invoice.getSubTotal()));
 
         BigDecimalField total = new BigDecimalField("Total", BigDecimal.ZERO, "");
-        total.setValue(invoice.getSubTotal());
+        total.setValue(invoice.getSubTotal() == null ? BigDecimal.ZERO : invoice.getSubTotal());
         total.setReadOnly(true);
 
-        BigDecimalField freightInBDT = new BigDecimalField("Freight in BDT", BigDecimal.ZERO, "");
-        freightInBDT.setValue(invoice.getFreightTotalInLocalCurr());
+        BigDecimalField freightInBDT = new BigDecimalField("Freight in BDT", "");
+        freightInBDT.setValue(invoice.getFreightTotalInLocalCurr() == null ? BigDecimal.ZERO : invoice.getFreightTotalInLocalCurr());
         freightInBDT.setReadOnly(true);
 
-        BigDecimalField totalFreight = new BigDecimalField("Total Freight", BigDecimal.ZERO, "");
-        totalFreight.setValue(invoice.getTotalFreight());
+        BigDecimalField totalFreight = new BigDecimalField("Total Freight", "");
+        totalFreight.setValue(invoice.getTotalFreight() == null ? BigDecimal.ZERO : invoice.getTotalFreight());
         totalFreight.setReadOnly(true);
 
-        BigDecimalField ratePerContField = new BigDecimalField("Rate Per Container", BigDecimal.ZERO, "");
-        ratePerContField.setValue(invoice.getRatePerContainer());
+        BigDecimalField ratePerContField = new BigDecimalField("Rate Per Container", "");
+        ratePerContField.setValue(invoice.getRatePerContainer() == null ? BigDecimal.ZERO : invoice.getRatePerContainer());
         ratePerContField.setValueChangeMode(ValueChangeMode.EAGER);
 
-        BigDecimalField conversionRate = new BigDecimalField("Conversion Rate", BigDecimal.ZERO, "");
-        conversionRate.setValue(invoice.getConversionRate());
+        BigDecimalField conversionRate = new BigDecimalField("Conversion Rate", "");
+        conversionRate.setValue(invoice.getConversionRate() == null ? BigDecimal.ZERO : invoice.getConversionRate());
 
         ComboBox<AmountCurrency> currComboBox = new ComboBox<>("Currency");
         currComboBox.setItems(AmountCurrency.values());
@@ -793,28 +795,28 @@ public class ShowShipmentView extends VerticalLayout {
 
         BigDecimalField otherCost1Amt = new BigDecimalField("Other Cost 1 Amount:", BigDecimal.ZERO, "Cannot be Empty");
         otherCost1Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost1Amt.setValue(invoice.getOther1Amt());
+        otherCost1Amt.setValue(invoice.getOther1Amt()  == null ? BigDecimal.ZERO : invoice.getOther1Amt());
 
         TextField otherField2 = new TextField("Other Cost Name 2:");
         otherField2.setValue(Objects.requireNonNullElse(invoice.getOtherDesc2(), ""));
 
         BigDecimalField otherCost2Amt = new BigDecimalField("Other Cost 2 Amount:", BigDecimal.ZERO, "Cannot be Empty");
         otherCost2Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost2Amt.setValue(invoice.getOther2Amt());
+        otherCost2Amt.setValue(invoice.getOther2Amt()  == null ? BigDecimal.ZERO : invoice.getOther2Amt());
 
         TextField otherField3 = new TextField("Other Cost Name 3:");
         otherField3.setValue(Objects.requireNonNullElse(invoice.getOtherDesc3(), ""));
 
         BigDecimalField otherCost3Amt = new BigDecimalField("Other Cost 3 Amount:", BigDecimal.ZERO, "Cannot be Empty");
         otherCost3Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost3Amt.setValue(invoice.getOther3Amt());
+        otherCost3Amt.setValue(invoice.getOther3Amt() == null ? BigDecimal.ZERO : invoice.getOther3Amt());
 
         TextField otherField4 = new TextField("Other Cost Name 4:");
         otherField4.setValue(Objects.requireNonNullElse(invoice.getOtherDesc4(), ""));
 
         BigDecimalField otherCost4Amt = new BigDecimalField("Other Cost 4 Amount:", BigDecimal.ZERO, "Cannot be Empty");
         otherCost4Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost4Amt.setValue(invoice.getOther4Amt());
+        otherCost4Amt.setValue(invoice.getOther4Amt()  == null ? BigDecimal.ZERO : invoice.getOther4Amt());
 
         ComboBox<BankDetails> bankDetailsComboBox = new ComboBox<>("Choose Bank Details");
         bankDetailsComboBox.setItems(bankDetailsService.getAllBankDetails());
@@ -867,8 +869,8 @@ public class ShowShipmentView extends VerticalLayout {
                     totalFreight.setValue(e.getValue()
                             .multiply(BigDecimal.valueOf(numOfContainer.getValue())));
                     freightInBDT.setValue(totalFreight.getValue().multiply(conversionRate.getValue()));
-                    total.setValue(total.getValue().add(freightInBDT.getValue()).add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue()));
+                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue())
+                            .add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue()));
                     inWords.setText(Util.getAmountInWords(total.getValue()));
                 }
         );
@@ -923,28 +925,37 @@ public class ShowShipmentView extends VerticalLayout {
             parameters.put("POL_ETD", getFormattedDate(shipment.getSchedule().getLoadingPortEta()));
             parameters.put("DEST_ETA", getFormattedDate(shipment.getSchedule().getDestinationPortEta()));
             parameters.put("SHIPPER_EMAIL", shipment.getShipper().getEmail());
-            parameters.put("LOGO_URL", REPORTS_PATH + Util.imagePath);
+            parameters.put("LOGO_URL", Util.imagePath);
             parameters.put("SHIPPER_INV_NO", shipment.getInvoiceNo());
             parameters.put("FREIGHT_CURRENCY", currComboBox.getValue().toString());
-            parameters.put("CONVERSION_RATE", conversionRate.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
-            parameters.put("FREIGHT_RATE", ratePerContField.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
-            parameters.put("TOTAL_FREIGHT", totalFreight.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
-            parameters.put("FREIGHT_LOCAL", freightInBDT.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+
+            parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(conversionRate.getValue()
+                    .setScale(2, RoundingMode.UNNECESSARY)));
+            parameters.put("FREIGHT_RATE", Util.getFormattedBigDecimal(ratePerContField.getValue()
+                    .setScale(2, RoundingMode.UNNECESSARY)));
+            parameters.put("TOTAL_FREIGHT", Util.getFormattedBigDecimal(totalFreight.getValue()
+                    .setScale(2, RoundingMode.UNNECESSARY)));
+            parameters.put("FREIGHT_LOCAL", Util.getFormattedBigDecimal(freightInBDT.getValue()
+                    .setScale(2, RoundingMode.UNNECESSARY)));
             parameters.put("GOODS_DESCRIPTION", goodDescription.getValue());
             parameters.put("DESC_2", otherField1.getValue());
-            parameters.put("DESC_2_AMT", otherCost1Amt.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+            parameters.put("DESC_2_AMT", Util.getFormattedBigDecimal(otherCost1Amt.getValue()
+                    .setScale(2, RoundingMode.UNNECESSARY)));
             parameters.put("DESC_3", otherField2.getValue());
-            parameters.put("DESC_3_AMT", otherCost2Amt.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+            parameters.put("DESC_3_AMT", Util.getFormattedBigDecimal(otherCost2Amt.getValue()
+                    .setScale(2, RoundingMode.UNNECESSARY)));
 
             if (otherField3.getValue() != null && !otherField3.getValue().isEmpty()) {
                 reportName = "Invoice_row_3.jasper";
                 parameters.put("DESC_4", otherField3.getValue());
-                parameters.put("DESC_4_AMT", otherCost3Amt.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+                parameters.put("DESC_4_AMT", Util.getFormattedBigDecimal(otherCost3Amt.getValue()
+                        .setScale(2, RoundingMode.UNNECESSARY)));
             }
             if (otherField4.getValue() != null && !otherField4.getValue().isEmpty()) {
                 reportName = "Invoice_row_4.jasper";
                 parameters.put("DESC_5", otherField4.getValue());
-                parameters.put("DESC_5_AMT", otherCost4Amt.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+                parameters.put("DESC_5_AMT", Util.getFormattedBigDecimal(otherCost4Amt.getValue()
+                        .setScale(2, RoundingMode.UNNECESSARY)));
             }
 
             parameters.put("TOTAL", total.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
@@ -962,7 +973,7 @@ public class ShowShipmentView extends VerticalLayout {
             parameters.put("VESSEL", shipment.getSchedule().getFeederVesselName());
 
 
-            try (FileInputStream stream = new FileInputStream(REPORTS_PATH + reportName)) {
+            try (InputStream stream = getClass().getResourceAsStream((REPORTS_PATH + reportName))) {
                 return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
             } catch (JRException | IOException e) {
                 throw new RuntimeException(e);

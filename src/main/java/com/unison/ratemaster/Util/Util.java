@@ -20,7 +20,7 @@ public class Util {
     private static final BigDecimal thousand = BigDecimal.valueOf(1000);
     private static final BigDecimal lakh = BigDecimal.valueOf(100000);
     private static final BigDecimal crore = BigDecimal.valueOf(10000000);
-    public static final String imagePath = "logo_best.png";
+    public static final String imagePath = "Images/logo_best.png";
 
     public static Notification getNotificationForError(String errorMessage) {
         Notification notification = new Notification();
@@ -54,7 +54,14 @@ public class Util {
         return localDate.format(DateTimeFormatter.ofPattern(pattern));
     }
 
+    public static String getFormattedBigDecimal(BigDecimal bigDecimal) {
+        return AmountFormatter.getBDTakaFormattedAmount(bigDecimal);
+    }
+
     public static String getAmountInWords(BigDecimal amount) {
+        if (amount == null) {
+            return "In Words: Zero";
+        }
         if (amount.toPlainString().contains(".")) {
             String [] splitAmount = amount.toPlainString().split("\\.");
             BigDecimal nonDecimalAmount = new BigDecimal(splitAmount[0]);
