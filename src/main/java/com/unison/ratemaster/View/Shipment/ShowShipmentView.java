@@ -38,6 +38,7 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperRunManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.security.PermitAll;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,6 +52,7 @@ import java.util.function.Consumer;
 
 
 @PageTitle("View Shipments")
+@PermitAll
 @Route(value = "show-shipment", layout = MainView.class)
 public class ShowShipmentView extends VerticalLayout {
 

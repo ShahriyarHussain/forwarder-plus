@@ -27,10 +27,12 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.security.PermitAll;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+@PermitAll
 @Route(value = "create-booking", layout = MainView.class)
 public class CreateBookingView extends VerticalLayout {
 

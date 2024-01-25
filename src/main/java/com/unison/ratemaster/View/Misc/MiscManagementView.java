@@ -27,8 +27,10 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.security.PermitAll;
 import java.util.List;
 
+@PermitAll
 @PageTitle("Other Management")
 @Route(value = "other-management", layout = MainView.class)
 public class MiscManagementView extends VerticalLayout {

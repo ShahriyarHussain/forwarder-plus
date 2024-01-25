@@ -21,6 +21,9 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.security.PermitAll;
+
+@PermitAll
 @PageTitle("View Shipments")
 @Route(value = "manage-party", layout = MainView.class)
 public class ManagePartyView extends VerticalLayout {

@@ -22,8 +22,10 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.security.PermitAll;
 import java.util.List;
 
+@PermitAll
 @PageTitle("New Shipment")
 @Route(value = "create-rate", layout = MainView.class)
 public class CreateRateView extends VerticalLayout {
