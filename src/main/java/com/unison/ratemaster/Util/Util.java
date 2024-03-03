@@ -58,6 +58,7 @@ public class Util {
         return AmountFormatter.getBDTakaFormattedAmount(bigDecimal);
     }
 
+
     public static String getAmountInWords(BigDecimal amount) {
         if (amount == null) {
             return "In Words: Zero";
@@ -131,7 +132,9 @@ public class Util {
         }
     }
 
-    public static void setMap() {
+
+
+    private static void setMap() {
         map.put("0", "");
         map.put("1", "One");
         map.put("2", "Two");

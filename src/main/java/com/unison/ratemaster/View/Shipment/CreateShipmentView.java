@@ -21,6 +21,7 @@ import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.security.PermitAll;
@@ -37,6 +38,22 @@ import java.util.List;
 public class CreateShipmentView extends VerticalLayout {
 
     byte[] masterBl;
+    TextField name;
+    TextField blNo;
+    TextArea goodsDescription;
+    TextArea shipperMarks;
+    TextField bookingNo;
+    TextField shipperInvoiceNo;
+    ComboBox<ContainerType> containerType;
+    ComboBox<ContainerSize> containerSize;
+    IntegerField numOfContainers;
+    ComboBox<Client> shipper;
+    ComboBox<Client> consignee;
+    ComboBox<Client> notifyParty;
+    ComboBox<Schedule> scheduleComboBox;
+    ComboBox<Commodity> commodities;
+    ComboBox<Carrier> carrierComboBox;
+    Button saveButton;
 
     public CreateShipmentView(@Autowired ShipmentService shipmentService,
                               @Autowired ClientService clientService,
@@ -47,69 +64,89 @@ public class CreateShipmentView extends VerticalLayout {
 
         H2 title = new H2("Create Shipment");
 
-        TextField name = new TextField("Shipment Name");
+        name = new TextField("Shipment Name");
         name.setRequired(true);
 
-        TextField blNo = new TextField("B/L No");
-        TextArea goodsDescription = new TextArea("Goods Description");
+        blNo = new TextField("B/L No");
+
+        goodsDescription = new TextArea("Goods Description");
         goodsDescription.setHeight(10, Unit.EM);
-        TextArea shipperMarks = new TextArea("Shipper Marks");
+
+        shipperMarks = new TextArea("Shipper Marks");
         shipperMarks.setHeight(10, Unit.EM);
 
-        TextField bookingNo = new TextField("Booking No");
-        TextField invoiceNo = new TextField("Shipper Invoice No");
+        bookingNo = new TextField("Booking No");
 
-        ComboBox<ContainerType> containerType = new ComboBox<>("Container Type:");
+        shipperInvoiceNo = new TextField("Shipper Invoice No");
+        shipperInvoiceNo.setRequired(true);
+
+        containerType = new ComboBox<>("Container Type:");
         containerType.setItems(ContainerType.values());
         containerType.setItemLabelGenerator(ContainerType::getContainerSize);
+        containerType.setRequired(true);
 
-        ComboBox<ContainerSize> containerSize = new ComboBox<>("Container Size");
+        containerSize = new ComboBox<>("Container Size");
         containerSize.setItems(ContainerSize.values());
         containerSize.setItemLabelGenerator(ContainerSize::getContainerSize);
+        containerSize.setRequired(true);
 
-        IntegerField numOfContainers = new IntegerField("Number of Containers");
+        numOfContainers = new IntegerField("Number of Containers");
+        numOfContainers.setValue(0);
 
         List<Client> clients = clientService.getAllClients();
-        ComboBox<Client> shipper = new ComboBox<>("Shipper");
+
+        shipper = new ComboBox<>("Shipper");
         shipper.setItems(clients);
         shipper.setItemLabelGenerator(Client::getName);
+        shipper.setRequired(true);
 
-        ComboBox<Client> consignee = new ComboBox<>("Consignee");
+        consignee = new ComboBox<>("Consignee");
         consignee.setItems(clients);
         consignee.setItemLabelGenerator(Client::getName);
 
-        ComboBox<Client> notifyParty = new ComboBox<>("Notify Party");
+        notifyParty = new ComboBox<>("Notify Party");
         notifyParty.setItems(clients);
         notifyParty.setItemLabelGenerator(Client::getName);
 
-        ComboBox<Schedule> scheduleComboBox = new ComboBox<>("Schedule");
+        scheduleComboBox = new ComboBox<>("Schedule");
         scheduleComboBox.setItems(scheduleService.getValidSchedules());
         scheduleComboBox.setItemLabelGenerator(Schedule::getScheduleSummary);
 
-        ComboBox<Commodity> commodities = new ComboBox<>("Commodity");
+        commodities = new ComboBox<>("Commodity");
         commodities.setItems(commodityService.getAllCommodity());
         commodities.setItemLabelGenerator(Commodity::getCommoditySummary);
+        commodities.setRequired(true);
 
         Upload upload = getUploadComponent();
 
-        ComboBox<Carrier> carrierComboBox = new ComboBox<>("Carrier");
+        carrierComboBox = new ComboBox<>("Carrier");
         carrierComboBox.setItems(carrierService.getAllCarriers());
         carrierComboBox.setItemLabelGenerator(Carrier::getName);
+        carrierComboBox.setRequired(true);
 
-        Button saveButton = new Button("Save", event -> {
+        saveButton = new Button("Save", event -> {
+            if (doesFormContainInvalidData()) {
+                Util.getNotificationForError("Please provide valid data").open();
+                return;
+            }
+            if (isShipperInvoiceAlreadyExists(shipmentService)) {
+                Util.getNotificationForError("A shipment invoice already exists with the number " +
+                        shipperInvoiceNo.getValue()).open();
+                return;
+            }
             Shipment shipment = new Shipment();
             shipment.setName(name.getValue());
             shipment.setBlNo(blNo.getValue());
-            shipment.setInvoiceNo(invoiceNo.getValue());
+            shipment.setInvoiceNo(shipperInvoiceNo.getValue());
             shipment.setGoodsDescription(goodsDescription.getValue());
             shipment.setShipperMarks(shipperMarks.getValue());
             shipment.setShipper(shipper.getValue());
             shipment.setConsignee(consignee.getValue());
             shipment.setNotifyParty(notifyParty.getValue());
             shipment.setStatus(ShipmentStatus.NEW);
-            shipment.setMasterBl(this.masterBl);
+            shipment.setMasterBl(masterBl);
             shipment.setCommodity(commodities.getValue());
-            shipment.setMasterBl(this.masterBl);
+            shipment.setMasterBl(masterBl);
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
             shipment.setCarrier(carrierComboBox.getValue());
@@ -121,12 +158,11 @@ public class CreateShipmentView extends VerticalLayout {
 
             shipment.setInvoice(invoice);
 
-
             Booking booking = new Booking();
             booking.setBookingNo(bookingNo.getValue());
             booking.setNumOfContainers(numOfContainers.getValue());
             booking.setContainerType(containerType.getValue());
-            booking.setInvoiceNo(invoiceNo.getValue());
+            booking.setInvoiceNo(shipperInvoiceNo.getValue());
             booking.setStuffingCostPerContainer(BigDecimal.ZERO);
             booking.setNumOfContainers(numOfContainers.getValue());
             booking.setContainerSize(containerSize.getValue());
@@ -143,7 +179,7 @@ public class CreateShipmentView extends VerticalLayout {
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         FormLayout formLayout = new FormLayout();
-        formLayout.add(name, blNo, invoiceNo, bookingNo, containerType, numOfContainers, containerSize,
+        formLayout.add(name, blNo, shipperInvoiceNo, bookingNo, containerType, numOfContainers, containerSize,
                 commodities, scheduleComboBox, shipper, consignee, notifyParty, goodsDescription, shipperMarks,
                 carrierComboBox, upload);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
@@ -151,6 +187,62 @@ public class CreateShipmentView extends VerticalLayout {
         formLayout.setColspan(shipperMarks,2);
 
         add(title, formLayout, saveButton);
+    }
+
+    private boolean isShipperInvoiceAlreadyExists(ShipmentService shipmentService) {
+        if (shipper != null && shipper.getValue() != null &&
+                shipmentService.isShipmentExistsByShipperAndShipperInvoice(shipperInvoiceNo.getValue(), shipper.getValue())) {
+            shipperInvoiceNo.setInvalid(true);
+            shipperInvoiceNo.setErrorMessage("Invoice No. for Shipper already exists");
+            shipper.setInvalid(true);
+            shipper.setErrorMessage(shipperInvoiceNo.getErrorMessage());
+            return true;
+        }
+        return false;
+    }
+
+    private boolean doesFormContainInvalidData() {
+        if (!StringUtils.isNotBlank(name.getValue())) {
+            name.setInvalid(true);
+            name.setErrorMessage("Cannot be empty");
+            return true;
+        }
+        if (!StringUtils.isNotBlank(shipperInvoiceNo.getValue())) {
+            shipperInvoiceNo.setInvalid(true);
+            shipperInvoiceNo.setErrorMessage("Cannot be empty");
+            return true;
+        }
+        if (containerType.getValue() == null) {
+            containerType.setInvalid(true);
+            containerType.setErrorMessage("Please select Container Type");
+            return true;
+        }
+        if (numOfContainers.getValue() < 1) {
+            numOfContainers.setInvalid(true);
+            numOfContainers.setErrorMessage("Cannot be less than 1");
+            return true;
+        }
+        if (containerSize.getValue() == null) {
+            containerSize.setInvalid(true);
+            containerSize.setErrorMessage("Please select Container Size");
+            return true;
+        }
+        if (commodities.getValue() == null) {
+            commodities.setInvalid(true);
+            commodities.setErrorMessage("Please select a Commodity");
+            return true;
+        }
+        if (shipper.getValue() == null) {
+            shipper.setInvalid(true);
+            shipper.setErrorMessage("Please select a Shipper");
+            return true;
+        }
+        if (carrierComboBox.getValue() == null) {
+            carrierComboBox.setInvalid(true);
+            carrierComboBox.setErrorMessage("Please select a Carrier");
+            return true;
+        }
+        return false;
     }
 
     private Upload getUploadComponent() {
@@ -161,7 +253,6 @@ public class CreateShipmentView extends VerticalLayout {
         upload.setMaxFiles(1);
 
         upload.addSucceededListener(event -> {
-            //String fileName = event.getFileName();
             InputStream inputStream = memoryBuffer.getInputStream();
             try {
                 this.masterBl = inputStream.readAllBytes();

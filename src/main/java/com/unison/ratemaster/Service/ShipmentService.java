@@ -1,6 +1,7 @@
 package com.unison.ratemaster.Service;
 
 import com.unison.ratemaster.Entity.Booking;
+import com.unison.ratemaster.Entity.Client;
 import com.unison.ratemaster.Entity.Shipment;
 import com.unison.ratemaster.Repository.ShipmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -44,5 +45,9 @@ public class ShipmentService {
     @Transactional
     public byte[] getPdf(String blNo) {
         return shipmentRepository.getPdf(blNo);
+    }
+
+    public boolean isShipmentExistsByShipperAndShipperInvoice(String shipperInvoiceNo, Client shipper) {
+        return shipmentRepository.isShipmentExistsByShipperAndShipperInvoiceNo(shipperInvoiceNo, shipper) > 0;
     }
 }
