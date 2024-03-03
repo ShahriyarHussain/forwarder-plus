@@ -28,6 +28,7 @@ import java.util.List;
 @PermitAll
 @PageTitle("New Shipment")
 @Route(value = "create-rate", layout = MainView.class)
+//////@RolesAllowed({"ADMIN", "USER"})
 public class CreateRateView extends VerticalLayout {
 
     Schedule schedule;

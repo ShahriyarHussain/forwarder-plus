@@ -8,7 +8,6 @@
     "@polymer/iron-meta": "3.0.1",
     "@polymer/iron-resizable-behavior": "3.0.1",
     "@polymer/polymer": "3.5.1",
-    "@vaadin-component-factory/vcf-pdf-viewer": "1.4.1",
     "@vaadin/accordion": "23.3.19",
     "@vaadin/app-layout": "23.3.19",
     "@vaadin/avatar": "23.3.19",
@@ -121,7 +120,6 @@
     "construct-style-sheets-polyfill": "3.1.0",
     "date-fns": "2.29.3",
     "lit": "2.6.1",
-    "print-js": "1.6.0",
     "proj4": "2.8.1"
   },
   "devDependencies": {
@@ -148,7 +146,6 @@
       "@polymer/iron-meta": "3.0.1",
       "@polymer/iron-resizable-behavior": "3.0.1",
       "@polymer/polymer": "3.5.1",
-      "@vaadin-component-factory/vcf-pdf-viewer": "1.4.1",
       "@vaadin/accordion": "23.3.19",
       "@vaadin/app-layout": "23.3.19",
       "@vaadin/avatar": "23.3.19",
@@ -261,7 +258,6 @@
       "construct-style-sheets-polyfill": "3.1.0",
       "date-fns": "2.29.3",
       "lit": "2.6.1",
-      "print-js": "1.6.0",
       "proj4": "2.8.1"
     },
     "devDependencies": {
@@ -280,7 +276,7 @@
       "workbox-core": "6.5.4",
       "workbox-precaching": "6.5.4"
     },
-    "hash": "6036675926924f7128d6093a1f6dbf933097fd8bfcbbb1acf49026275485dc11"
+    "hash": "8b0c7a55abc74d028b540ac78d6fb581120e7eba8e0d2097e69c39f3469df1e6"
   },
   "overrides": {
     "@vaadin/bundles": "$@vaadin/bundles",
@@ -401,8 +397,6 @@
     "lit": "$lit",
     "@polymer/polymer": "$@polymer/polymer",
     "proj4": "$proj4",
-    "date-fns": "$date-fns",
-    "print-js": "$print-js",
-    "@vaadin-component-factory/vcf-pdf-viewer": "$@vaadin-component-factory/vcf-pdf-viewer"
+    "date-fns": "$date-fns"
   }
 }
