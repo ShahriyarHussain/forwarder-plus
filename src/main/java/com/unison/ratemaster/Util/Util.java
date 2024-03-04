@@ -24,7 +24,7 @@ public class Util {
 
     public static Notification getNotificationForError(String errorMessage) {
         Notification notification = new Notification();
-        notification.setDuration(2000);
+        notification.setDuration(3000);
         notification.setPosition(Notification.Position.TOP_CENTER);
         notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
         notification.setText(errorMessage);
