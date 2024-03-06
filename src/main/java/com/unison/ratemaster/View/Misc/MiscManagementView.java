@@ -6,6 +6,7 @@ import com.unison.ratemaster.Enum.ClientType;
 import com.unison.ratemaster.Service.*;
 import com.unison.ratemaster.Util.Util;
 import com.unison.ratemaster.View.MainView;
+import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.security.PermitAll;
 import java.util.List;
+import java.util.Objects;
 
 @PermitAll
 @PageTitle("Other Management")
@@ -110,10 +112,18 @@ public class MiscManagementView extends VerticalLayout {
         H4 clientTitle = new H4("Clients");
         clientTitle.setVisible(false);
         Grid<Client> clientGrid = new Grid<>();
+        clientGrid.setHeight(30, Unit.EM);
         clientGrid.setItems(clientService.getAllClients());
         clientGrid.addColumn(Client::getName).setHeader("Name").setAutoWidth(true);
         clientGrid.addColumn(Client::getType).setHeader("Type");
         clientGrid.addColumn(Client::getCountry).setHeader("Country");
+        clientGrid.addComponentColumn(client -> {
+            Button button = new Button(new Icon(VaadinIcon.PENCIL), event -> {
+                openClientsDialogBox(clientService, client).open();
+            });
+            button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            return button;
+        }).setHeader("Edit");
         clientGrid.addComponentColumn(client -> {
             Button button = new Button(new Icon(VaadinIcon.TRASH), event -> {
                 clientService.deleteClient(client);
@@ -273,7 +283,7 @@ public class MiscManagementView extends VerticalLayout {
             } else if (chooseType.getValue().equals("Commodities")) {
                 openCommoditiesDialogBox(commodityService).open();
             } else if (chooseType.getValue().equals("Clients")) {
-                openClientsDialogBox(clientService).open();
+                openClientsDialogBox(clientService, null).open();
             } else if (chooseType.getValue().equals("Banking")) {
                 openBankDetailsDialog(bankDetailsService).open();
             } else if (chooseType.getValue().equals("Contact")) {
@@ -286,7 +296,7 @@ public class MiscManagementView extends VerticalLayout {
 
     }
 
-    private Dialog openClientsDialogBox(ClientService clientService) {
+    private Dialog openClientsDialogBox(ClientService clientService, Client client) {
         Dialog dialog = new Dialog();
         H3 title = new H3("Add Client");
 
@@ -300,6 +310,16 @@ public class MiscManagementView extends VerticalLayout {
         TextField postCode = new TextField("Post/Zip Code");
         TextField email = new TextField("Email");
 
+        if (client != null) {
+            partyName.setValue(client.getName());
+            address.setValue(client.getAddress());
+            city.setValue(client.getCity());
+            country.setValue(client.getCountry());
+            taxId.setValue(client.getTaxId());
+            postCode.setValue(client.getPostCode());
+            email.setValue(client.getEmail());
+        }
+
         ComboBox<ClientType> partyType = new ComboBox<>("Party Type");
         partyType.setItems(ClientType.values());
 
@@ -307,18 +327,26 @@ public class MiscManagementView extends VerticalLayout {
         partyType.setRequired(true);
         partyType.setRequiredIndicatorVisible(true);
 
-        Button addButton = new Button("Add", e -> {
-            Client client = new Client();
-            client.setName(partyName.getValue());
-            client.setType(partyType.getValue());
-            client.setCity(city.getValue());
-            client.setAddress(address.getValue());
-            client.setCountry(country.getValue());
-            client.setPostCode(postCode.getValue());
-            client.setTaxId(taxId.getValue());
-            client.setEmail(email.getValue());
-            clientService.saveClient(client);
-            Util.getNotificationForSuccess("Client Added!").open();
+        String buttonLabel = client == null ? "Add" : "Save Changes";
+
+        Button addButton = new Button(buttonLabel, e -> {
+            Client newClient = Objects.requireNonNullElseGet(client, Client::new);
+
+            newClient.setName(partyName.getValue());
+            newClient.setType(partyType.getValue());
+            newClient.setCity(city.getValue());
+            newClient.setAddress(address.getValue());
+            newClient.setCountry(country.getValue());
+            newClient.setPostCode(postCode.getValue());
+            newClient.setTaxId(taxId.getValue());
+            newClient.setEmail(email.getValue());
+            try {
+                clientService.saveClient(newClient);
+                Util.getNotificationForSuccess("Client Saved!").open();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                Util.getNotificationForError("Error! " + ex.getMessage()).open();
+            }
         });
 
         formLayout.add(partyName, partyType, address, city, country, postCode, email);

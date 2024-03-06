@@ -2,7 +2,6 @@ package com.unison.ratemaster.View.Schedule;
 
 import com.unison.ratemaster.Entity.Port;
 import com.unison.ratemaster.Entity.Schedule;
-import com.unison.ratemaster.Entity.Transshipment;
 import com.unison.ratemaster.Service.PortService;
 import com.unison.ratemaster.Service.ScheduleService;
 import com.unison.ratemaster.Util.Util;
@@ -18,14 +17,10 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.LinkedList;
 import java.util.List;
 
 @Route(value = "create-schedule", layout = MainView.class)
 public class CreateScheduleView extends VerticalLayout {
-
-    List<Transshipment> transshipmentList = new LinkedList<>();
-
     public CreateScheduleView(@Autowired ScheduleService scheduleService,
                               @Autowired PortService portService) {
 

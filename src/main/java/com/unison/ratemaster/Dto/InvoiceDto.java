@@ -1,6 +1,8 @@
 package com.unison.ratemaster.Dto;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 

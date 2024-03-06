@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +31,7 @@ public class CreateBLView extends VerticalLayout {
     @Value("${reports.folder}")
     private String reportFolder;
 
-    public CreateBLView() throws JRException, FileNotFoundException {
+    public CreateBLView() {
         H3 pageTitle = new H3("Create Bill Of Lading");
         // Entry form section
         FormLayout formLayout = new FormLayout();

@@ -37,30 +37,29 @@ import java.util.List;
 @Route(value = "create-shipment", layout = MainView.class)
 public class CreateShipmentView extends VerticalLayout {
 
-    byte[] masterBl;
-    TextField name;
-    TextField blNo;
-    TextArea goodsDescription;
-    TextArea shipperMarks;
-    TextField bookingNo;
-    TextField shipperInvoiceNo;
-    ComboBox<ContainerType> containerType;
-    ComboBox<ContainerSize> containerSize;
-    IntegerField numOfContainers;
-    ComboBox<Client> shipper;
-    ComboBox<Client> consignee;
-    ComboBox<Client> notifyParty;
-    ComboBox<Schedule> scheduleComboBox;
-    ComboBox<Commodity> commodities;
-    ComboBox<Carrier> carrierComboBox;
-    Button saveButton;
+    private byte[] masterBl;
+    private final TextField name;
+    private final TextField blNo;
+    private final TextArea goodsDescription;
+    private final TextArea shipperMarks;
+    private final TextField bookingNo;
+    private final TextField shipperInvoiceNo;
+    private final ComboBox<ContainerType> containerType;
+    private final ComboBox<ContainerSize> containerSize;
+    private final IntegerField numOfContainers;
+    private final ComboBox<Client> shipper;
+    private final ComboBox<Client> consignee;
+    private final ComboBox<Client> notifyParty;
+    private final ComboBox<Commodity> commodities;
+    private final ComboBox<Carrier> carrierComboBox;
+    private final ShipmentService shipmentService;
 
-    public CreateShipmentView(@Autowired ShipmentService shipmentService,
-                              @Autowired ClientService clientService,
-                              @Autowired ScheduleService scheduleService,
-                              @Autowired CommodityService commodityService,
-                              @Autowired InvoiceService invoiceService,
-                              @Autowired CarrierService carrierService) {
+
+    public CreateShipmentView(ShipmentService shipmentService, @Autowired ClientService clientService,
+                              @Autowired ScheduleService scheduleService, @Autowired CommodityService commodityService,
+                              @Autowired InvoiceService invoiceService, @Autowired CarrierService carrierService) {
+
+        this.shipmentService = shipmentService;
 
         H2 title = new H2("Create Shipment");
 
@@ -108,7 +107,7 @@ public class CreateShipmentView extends VerticalLayout {
         notifyParty.setItems(clients);
         notifyParty.setItemLabelGenerator(Client::getName);
 
-        scheduleComboBox = new ComboBox<>("Schedule");
+        ComboBox<Schedule> scheduleComboBox = new ComboBox<>("Schedule");
         scheduleComboBox.setItems(scheduleService.getValidSchedules());
         scheduleComboBox.setItemLabelGenerator(Schedule::getScheduleSummary);
 
@@ -124,12 +123,12 @@ public class CreateShipmentView extends VerticalLayout {
         carrierComboBox.setItemLabelGenerator(Carrier::getName);
         carrierComboBox.setRequired(true);
 
-        saveButton = new Button("Save", event -> {
+        Button saveButton = new Button("Save", event -> {
             if (doesFormContainInvalidData()) {
                 Util.getNotificationForError("Please provide valid data").open();
                 return;
             }
-            if (isShipperInvoiceAlreadyExists(shipmentService)) {
+            if (isShipperInvoiceAlreadyExists()) {
                 Util.getNotificationForError("A shipment invoice already exists with the number " +
                         shipperInvoiceNo.getValue()).open();
                 return;
@@ -189,7 +188,7 @@ public class CreateShipmentView extends VerticalLayout {
         add(title, formLayout, saveButton);
     }
 
-    private boolean isShipperInvoiceAlreadyExists(ShipmentService shipmentService) {
+    private boolean isShipperInvoiceAlreadyExists() {
         if (shipper != null && shipper.getValue() != null &&
                 shipmentService.isShipmentExistsByShipperAndShipperInvoice(shipperInvoiceNo.getValue(), shipper.getValue())) {
             shipperInvoiceNo.setInvalid(true);
@@ -268,6 +267,4 @@ public class CreateShipmentView extends VerticalLayout {
         upload.setUploadButton(new Button("Upload MB/L"));
         return upload;
     }
-
-
 }

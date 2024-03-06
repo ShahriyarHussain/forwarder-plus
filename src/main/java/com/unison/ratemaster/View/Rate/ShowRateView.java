@@ -2,7 +2,6 @@ package com.unison.ratemaster.View.Rate;
 
 
 import com.unison.ratemaster.Entity.Rate;
-import com.unison.ratemaster.Service.PortService;
 import com.unison.ratemaster.Service.RateService;
 import com.unison.ratemaster.View.MainView;
 import com.vaadin.flow.component.button.Button;
@@ -26,7 +25,7 @@ import javax.annotation.security.PermitAll;
 @Route(value = "search-rates", layout = MainView.class)
 public class ShowRateView extends VerticalLayout {
 
-    public ShowRateView(@Autowired PortService portService, @Autowired RateService rateService) {
+    public ShowRateView(@Autowired RateService rateService) {
         H2 title = new H2("View Rates");
         Grid<Rate> grid = new Grid<>();
         grid.addColumn(rate -> rate.getPortOfLoading().getPortShortCode(), "pol").setHeader("POL")
@@ -34,7 +33,6 @@ public class ShowRateView extends VerticalLayout {
         grid.addColumn(rate -> rate.getPortOfDestination().getPortShortCode(), "pod").setHeader("POD")
                 .setTooltipGenerator(rate -> rate.getPortOfDestination().getPortCity() +", "+ rate.getPortOfDestination().getPortCountry());
 
-        //grid.addColumn(Rate::getCommodity, "commodity").setHeader("Commodity");
         grid.addColumn(Rate::getTerm, "term").setHeader("Term");
         grid.addColumn(Rate::getTwentyFtRate, "rate20").setHeader("20' Rate");
         grid.addColumn(Rate::getFortyFtRate, "rate40").setHeader("40' Rate");
@@ -79,8 +77,6 @@ public class ShowRateView extends VerticalLayout {
                 || rate.getPortOfLoading().getPortShortCode().toLowerCase().contains(searchTerm.toLowerCase());
         boolean matchesPortCountry = rate.getPortOfDestination().getPortCountry().toLowerCase().contains(searchTerm.toLowerCase())
                 || rate.getPortOfLoading().getPortCountry().toLowerCase().contains(searchTerm.toLowerCase());
-//        boolean matchesCarrier = rate.getCarrier().toLowerCase().contains(searchTerm.toLowerCase());
-//        boolean matchesCommodity = rate.getCommodity().toLowerCase().contains(searchTerm.toLowerCase());
-        return matchesPortCity || matchesShortCode || matchesPortCountry;// || matchesCommodity || matchesCarrier;
+        return matchesPortCity || matchesShortCode || matchesPortCountry;
     }
 }
