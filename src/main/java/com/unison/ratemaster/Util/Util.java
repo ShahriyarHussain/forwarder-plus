@@ -61,7 +61,7 @@ public class Util {
 
     public static String getAmountInWords(BigDecimal amount) {
         if (amount == null) {
-            return "In Words: Zero";
+            return "In Words: Zero Only";
         }
         if (amount.toPlainString().contains(".")) {
             String [] splitAmount = amount.toPlainString().split("\\.");
@@ -70,9 +70,9 @@ public class Util {
             String nonDecimalPart = getRoundedAmountInWords(nonDecimalAmount) + " Taka ";
             String decimalPart = getRoundedAmountInWords(decimalAmount);
             decimalPart = decimalPart.equals("Zero") ? "" : decimalPart + " Paisa";
-            return "In Words: " + nonDecimalPart + decimalPart;
+            return "In Words: " + nonDecimalPart + decimalPart + " Taka Only";
         } else {
-            return "In Words: " + getRoundedAmountInWords(amount);
+            return "In Words: " + getRoundedAmountInWords(amount) + " Taka Only";
         }
     }
 
@@ -82,7 +82,6 @@ public class Util {
             return "Zero";
         }
         setMap();
-
 
         StringBuilder amountInWords = new StringBuilder();
         amount = amount.setScale(0, RoundingMode.DOWN);
@@ -110,6 +109,7 @@ public class Util {
             amountInWords.append(getTwoDigitInWords(remainder)).append(" Hundred ");
         }
         amount = amount.remainder(hundred);
+
         amountInWords.append(getTwoDigitInWords(amount));
         return amountInWords.toString();
     }

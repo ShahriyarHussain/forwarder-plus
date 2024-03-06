@@ -1,8 +1,6 @@
 package com.unison.ratemaster;
 
 import com.vaadin.flow.component.page.AppShellConfigurator;
-import com.vaadin.flow.theme.Theme;
-import com.vaadin.flow.theme.lumo.Lumo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -15,7 +13,6 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
  *
  */
 @SpringBootApplication(exclude = { SecurityAutoConfiguration.class })
-@Theme(variant = Lumo.DARK)
 public class Application implements AppShellConfigurator {
 
     public static void main(String[] args) {

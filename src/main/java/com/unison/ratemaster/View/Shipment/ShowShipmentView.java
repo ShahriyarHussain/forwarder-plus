@@ -37,7 +37,6 @@ import com.vaadin.flow.server.StreamResource;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperRunManager;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.security.PermitAll;
 import java.io.ByteArrayInputStream;
@@ -55,22 +54,40 @@ import java.util.function.Consumer;
 @PageTitle("View Shipments")
 @PermitAll
 @Route(value = "show-shipment", layout = MainView.class)
+
 public class ShowShipmentView extends VerticalLayout {
 
     byte[] masterBl;
 
     private final String REPORTS_PATH = "/Reports/";
 
-    public ShowShipmentView(@Autowired ShipmentService shipmentService,
-                            @Autowired ClientService clientService,
-                            @Autowired ScheduleService scheduleService,
-                            @Autowired PortService portService,
-                            @Autowired BookingService bookingService,
-                            @Autowired CommodityService commodityService,
-                            @Autowired InvoiceService invoiceService,
-                            @Autowired CarrierService carrierService,
-                            @Autowired BankDetailsService bankDetailsService,
-                            @Autowired ContactDetailsService contactDetailsService) {
+    private final ShipmentService shipmentService;
+    private final ClientService clientService;
+    private final ScheduleService scheduleService;
+    private final PortService portService;
+    private final BookingService bookingService;
+    private final CommodityService commodityService;
+    private final InvoiceService invoiceService;
+    private final CarrierService carrierService;
+    private final BankDetailsService bankDetailsService;
+    private final ContactDetailsService contactDetailsService;
+
+    public ShowShipmentView(ShipmentService shipmentService, ClientService clientService, ScheduleService scheduleService,
+                            PortService portService,BookingService bookingService, CommodityService commodityService,
+                            InvoiceService invoiceService, CarrierService carrierService, BankDetailsService bankDetailsService,
+                            ContactDetailsService contactDetailsService) {
+
+        this.shipmentService = shipmentService;
+        this.clientService = clientService;
+        this.scheduleService = scheduleService;
+        this.portService = portService;
+        this.bookingService = bookingService;
+        this.commodityService = commodityService;
+        this.invoiceService = invoiceService;
+        this.carrierService = carrierService;
+        this.bankDetailsService = bankDetailsService;
+        this.contactDetailsService = contactDetailsService;
+
 
         H2 title = new H2("View Shipment");
 
@@ -144,18 +161,17 @@ public class ShowShipmentView extends VerticalLayout {
         GridContextMenu<Shipment> menu = grid.addContextMenu();
         menu.addItem("Edit Shipment", event -> {
             if (event.getItem().isPresent()) {
-                createEditDialog(event.getItem().get(), clientService, shipmentService, scheduleService,
-                        commodityService, carrierService).open();
+                createEditDialog(event.getItem().get()).open();
             }
         });
         menu.addItem("Edit Schedule", event -> {
             if (event.getItem().isPresent()) {
-                createScheduleEditorDialog(event.getItem().get(), scheduleService, portService, shipmentService).open();
+                createScheduleEditorDialog(event.getItem().get()).open();
             }
         });
         menu.addItem("Edit Booking", event -> {
             if (event.getItem().isPresent()) {
-                createBookingEditorDialog(event.getItem().get(), bookingService).open();
+                createBookingEditorDialog(event.getItem().get()).open();
             }
         });
         menu.add(new Hr());
@@ -166,7 +182,7 @@ public class ShowShipmentView extends VerticalLayout {
         });
         menu.addItem("Create Invoice", event -> {
             if (event.getItem().isPresent()) {
-                createInvoiceMakerDialog(event.getItem().get(), invoiceService, bankDetailsService, contactDetailsService).open();
+                createInvoiceMakerDialog(event.getItem().get()).open();
             }
         });
         menu.add(new Hr());
@@ -207,10 +223,10 @@ public class ShowShipmentView extends VerticalLayout {
         }
 
 
-        // শিপমেন্ট সংলগ্ন বুকিং এর তথ্য যাচাইকরণ
+        // শিপমেন্ট সংলগ্ন বুকিং এর তথ্য যাচাইকরণ । যদি না থাকে তবে আর কোনও যাচাইকরণ প্রয়োজন নেই
         if (shipment.getBooking() == null) {
-            errorList.add("No Booking Found for shipment. Please create a new one!");
-            title.setText("Please provide correct data for the following " + errorList.size() + " fields");
+            errorList.add("No Booking Found for shipment. Please create a new or choose existing!");
+            title.setText("Please make corrections for following " + errorList.size() + " fields");
             listBox.setItems(errorList);
             return dialog;
         }
@@ -234,10 +250,10 @@ public class ShowShipmentView extends VerticalLayout {
         }
 
 
-        // শিডিউল যাচাইকরণ
+        // শিডিউল যাচাইকরণ । যদি না থাকে তবে আর কোনও যাচাইকরণ প্রয়োজন নেই
         if (shipment.getSchedule() == null) {
-            errorList.add("No Schedule Found for shipment. Please create a new one!");
-            title.setText("Please provide correct data for the following " + errorList.size() + " fields");
+            errorList.add("No Schedule Found for shipment. Please create a new or choose existing!");
+            title.setText("Please make corrections for following " + errorList.size() + " fields");
             listBox.setItems(errorList);
             return dialog;
         }
@@ -275,7 +291,7 @@ public class ShowShipmentView extends VerticalLayout {
         }
 
 
-        // যদি প্রথম ও দ্বিতীয় শিপমেন্ট থাকে তবে এর তথ্য যাচাইকরণ
+        // যদি প্রথম ও দ্বিতীয় ট্রান্সশিপমেন্ট থাকে তবে এর তথ্য যাচাইকরণ
         if (shipment.getSchedule().getTsPort() != null) {
             if (shipment.getSchedule().getTsPort().getPortName() == null) {
                 errorList.add("Please provide Transhipment Port Name!");
@@ -302,7 +318,7 @@ public class ShowShipmentView extends VerticalLayout {
             dialog.getFooter().add(getShipmentAdviceDownloadButton(shipment));
         } else {
             listBox.setItems(errorList);
-            title.setText("Please provide correct data for the following " + errorList.size() + " fields");
+            title.setText("Please make corrections for following " + errorList.size() + " fields");
         }
         return dialog;
     }
@@ -427,8 +443,7 @@ public class ShowShipmentView extends VerticalLayout {
         return date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
     }
 
-    private Component createFilterHeader(String labelText,
-                                         Consumer<String> filterChangeConsumer) {
+    private Component createFilterHeader(String labelText, Consumer<String> filterChangeConsumer) {
         Label label = new Label(labelText);
         label.getStyle().set("padding-top", "var(--lumo-space-m)")
                 .set("font-size", "var(--lumo-font-size-s)");
@@ -458,9 +473,7 @@ public class ShowShipmentView extends VerticalLayout {
     }
 
 
-    private Dialog createEditDialog(Shipment shipment, ClientService clientService,
-                                    ShipmentService shipmentService, ScheduleService scheduleService,
-                                    CommodityService commodityService, CarrierService carrierService) {
+    private Dialog createEditDialog(Shipment shipment) {
 
         Dialog dialog = new Dialog();
 
@@ -615,7 +628,7 @@ public class ShowShipmentView extends VerticalLayout {
         return upload;
     }
 
-    public Dialog createBookingEditorDialog(Shipment shipment, BookingService bookingService) {
+    public Dialog createBookingEditorDialog(Shipment shipment) {
         Dialog dialog = new Dialog();
 
         Booking booking = shipment.getBooking();
@@ -732,8 +745,7 @@ public class ShowShipmentView extends VerticalLayout {
         return dialog;
     }
 
-    public Dialog createScheduleEditorDialog(Shipment shipment, ScheduleService scheduleService,
-                                             PortService portService, ShipmentService shipmentService) {
+    public Dialog createScheduleEditorDialog(Shipment shipment) {
 
         Dialog dialog = new Dialog();
         Schedule schedule;
@@ -882,9 +894,7 @@ public class ShowShipmentView extends VerticalLayout {
         return dialog;
     }
 
-    public Dialog createInvoiceMakerDialog(Shipment shipment, InvoiceService invoiceService,
-                                           BankDetailsService bankDetailsService,
-                                           ContactDetailsService contactDetailsService) {
+    public Dialog createInvoiceMakerDialog(Shipment shipment) {
 
         Invoice invoice = shipment.getInvoice();
 
@@ -1104,7 +1114,8 @@ public class ShowShipmentView extends VerticalLayout {
                         .setScale(2, RoundingMode.UNNECESSARY)));
             }
 
-            parameters.put("TOTAL", total.getValue().setScale(2, RoundingMode.UNNECESSARY).toPlainString());
+            parameters.put("TOTAL", Util.getFormattedBigDecimal(total.getValue().setScale(2,
+                    RoundingMode.UNNECESSARY)));
             parameters.put("TOTAL_IN_WORD", inWords.getText());
             parameters.put("BANK_NAME", bankDetailsComboBox.getValue().getBankName());
             parameters.put("AC_NAME", bankDetailsComboBox.getValue().getAccName());
