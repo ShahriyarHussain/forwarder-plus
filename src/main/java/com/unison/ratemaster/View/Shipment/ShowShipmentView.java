@@ -57,10 +57,7 @@ import java.util.function.Consumer;
 
 public class ShowShipmentView extends VerticalLayout {
 
-    byte[] masterBl;
-
     private final String REPORTS_PATH = "/Reports/";
-
     private final ShipmentService shipmentService;
     private final ClientService clientService;
     private final ScheduleService scheduleService;
@@ -71,6 +68,9 @@ public class ShowShipmentView extends VerticalLayout {
     private final CarrierService carrierService;
     private final BankDetailsService bankDetailsService;
     private final ContactDetailsService contactDetailsService;
+
+    private byte[] masterBl;
+    private final Grid<Shipment> grid;
 
     public ShowShipmentView(ShipmentService shipmentService, ClientService clientService, ScheduleService scheduleService,
                             PortService portService,BookingService bookingService, CommodityService commodityService,
@@ -91,7 +91,7 @@ public class ShowShipmentView extends VerticalLayout {
 
         H2 title = new H2("View Shipment");
 
-        Grid<Shipment> grid = new Grid<>();
+        grid = new Grid<>();
         grid.setHeight(30, Unit.EM);
         Grid.Column<Shipment> blColumn = grid.addColumn(Shipment::getBlNo).setSortable(false).setFrozen(true).setAutoWidth(true);
         Grid.Column<Shipment> bookingColumn = grid.addColumn(shipment -> shipment.getBooking().getBookingNo()).setAutoWidth(true);
@@ -105,7 +105,7 @@ public class ShowShipmentView extends VerticalLayout {
                 shipment.getBooking().getContainerSize().getContainerSize()).setAutoWidth(true);
 
         Grid.Column<Shipment> statusColumn = grid.addColumn(shipment -> shipment.getStatus().name())
-                .setTooltipGenerator(Shipment::getName).setAutoWidth(true);
+                .setTooltipGenerator(shipment -> shipment.getStatus().toString()).setAutoWidth(true);
 
         Grid.Column<Shipment> createdColumn = grid.addColumn(shipment -> shipment.getCreatedOn()
                 .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true).setAutoWidth(true);
@@ -349,7 +349,6 @@ public class ShowShipmentView extends VerticalLayout {
         return anchor;
     }
 
-
     private Map<String, Object> prepareParamsForShipmentAdvice(Shipment shipment) {
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("ADVICE_DATE", getFormattedDate(LocalDate.now()));
@@ -472,7 +471,6 @@ public class ShowShipmentView extends VerticalLayout {
         return layout;
     }
 
-
     private Dialog createEditDialog(Shipment shipment) {
 
         Dialog dialog = new Dialog();
@@ -566,6 +564,7 @@ public class ShowShipmentView extends VerticalLayout {
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
             shipment.setSchedule(scheduleComboBox.getValue());
+            shipment.setStatus(statusComboBox.getValue());
 
             shipment.getBooking().setBookingNo(bookingNo.getValue());
             shipment.getBooking().setContainerType(containerType.getValue());
@@ -576,6 +575,7 @@ public class ShowShipmentView extends VerticalLayout {
             try {
                 shipmentService.saveEditedShipment(shipment);
                 Util.getNotificationForSuccess("Shipment Saved Successfully!").open();
+                grid.setItems(shipmentService.getAllShipments());
                 dialog.close();
             } catch (Exception e) {
                 //e.printStackTrace();
@@ -916,8 +916,18 @@ public class ShowShipmentView extends VerticalLayout {
         DatePicker expDate = new DatePicker("Exp Date");
         expDate.setValue(invoice.getExpDate());
 
+        ComboBox<AmountCurrency> freightCurrencyComboBox = new ComboBox<>("Carrier Currency");
+        freightCurrencyComboBox.setItems(AmountCurrency.values());
+        freightCurrencyComboBox.setItemLabelGenerator(curr -> curr.toString() + " - " + curr.getCurrencyName());
+        freightCurrencyComboBox.setValue(invoice.getFreightCurrency());
+
+        ComboBox<AmountCurrency> localCurrencyComboBox = new ComboBox<>("Local Currency");
+        localCurrencyComboBox.setItems(AmountCurrency.values());
+        localCurrencyComboBox.setItemLabelGenerator(curr -> curr.toString() + " - " + curr.getCurrencyName());
+        localCurrencyComboBox.setValue(invoice.getLocalCurrency());
+
         Text inWords = new Text("Zero");
-        inWords.setText(Util.getAmountInWords(invoice.getSubTotal()));
+        inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(invoice.getSubTotal())));
 
         BigDecimalField total = new BigDecimalField("Total", BigDecimal.ZERO, "");
         total.setValue(invoice.getSubTotal() == null ? BigDecimal.ZERO : invoice.getSubTotal());
@@ -937,11 +947,6 @@ public class ShowShipmentView extends VerticalLayout {
 
         BigDecimalField conversionRate = new BigDecimalField("Conversion Rate", "");
         conversionRate.setValue(invoice.getConversionRate() == null ? BigDecimal.ZERO : invoice.getConversionRate());
-
-        ComboBox<AmountCurrency> currComboBox = new ComboBox<>("Currency");
-        currComboBox.setItems(AmountCurrency.values());
-        currComboBox.setItemLabelGenerator(curr -> curr.toString() + " - " + curr.getCurrencyName());
-        currComboBox.setValue(invoice.getCurrency());
 
         TextField goodDescription = new TextField("Goods Description");
         goodDescription.setValue(Objects.requireNonNullElse(invoice.getGoodsDescription(), ""));
@@ -991,7 +996,7 @@ public class ShowShipmentView extends VerticalLayout {
                     }
                     total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
                             .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(Util.getAmountInWords(total.getValue()));
+                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
                 }
         );
         otherCost2Amt.addValueChangeListener(e -> {
@@ -1000,7 +1005,7 @@ public class ShowShipmentView extends VerticalLayout {
                     }
                     total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
                             .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(Util.getAmountInWords(total.getValue()));
+                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
                 }
         );
         otherCost3Amt.addValueChangeListener(e -> {
@@ -1009,7 +1014,7 @@ public class ShowShipmentView extends VerticalLayout {
                     }
                     total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
                             .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(Util.getAmountInWords(total.getValue()));
+                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
                 }
         );
         otherCost4Amt.addValueChangeListener(e -> {
@@ -1018,7 +1023,7 @@ public class ShowShipmentView extends VerticalLayout {
                     }
                     total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
                             .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(Util.getAmountInWords(total.getValue()));
+                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
                 }
         );
         ratePerContField.addValueChangeListener(e -> {
@@ -1027,7 +1032,7 @@ public class ShowShipmentView extends VerticalLayout {
                     freightInBDT.setValue(totalFreight.getValue().multiply(conversionRate.getValue()));
                     total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue())
                             .add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue()));
-                    inWords.setText(Util.getAmountInWords(total.getValue()));
+                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
                 }
         );
 
@@ -1041,7 +1046,8 @@ public class ShowShipmentView extends VerticalLayout {
             invoice.setRatePerContainer(ratePerContField.getValue());
             invoice.setTotalFreight(totalFreight.getValue());
             invoice.setConversionRate(conversionRate.getValue());
-            invoice.setCurrency(currComboBox.getValue());
+            invoice.setFreightCurrency(freightCurrencyComboBox.getValue());
+            invoice.setLocalCurrency(localCurrencyComboBox.getValue());
             invoice.setGoodsDescription(goodDescription.getValue());
 
             invoice.setOtherDesc1(otherField1.getValue());
@@ -1083,7 +1089,7 @@ public class ShowShipmentView extends VerticalLayout {
             parameters.put("SHIPPER_EMAIL", shipment.getShipper().getEmail());
             parameters.put("LOGO_URL", Util.imagePath);
             parameters.put("SHIPPER_INV_NO", shipment.getInvoiceNo());
-            parameters.put("FREIGHT_CURRENCY", currComboBox.getValue().toString());
+            parameters.put("FREIGHT_CURRENCY", freightCurrencyComboBox.getValue().toString());
 
             parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(conversionRate.getValue()
                     .setScale(2, RoundingMode.UNNECESSARY)));
@@ -1158,7 +1164,7 @@ public class ShowShipmentView extends VerticalLayout {
 
         horizontalLayout.add(inWords);
         FormLayout invoiceForm = new FormLayout();
-        invoiceForm.add(currComboBox, conversionRate, expNo, expDate, gap0, line1, goodDescription, numOfContainer,
+        invoiceForm.add(freightCurrencyComboBox, localCurrencyComboBox, conversionRate, expNo, expDate, gap0, line1, goodDescription, numOfContainer,
                 ratePerContField, totalFreight, freightInBDT, otherField1, gap1, otherCost1Amt, otherField2, gap2,
                 otherCost2Amt, otherField3, gap3, otherCost3Amt, otherField4, gap4, otherCost4Amt, line3,
                 horizontalLayout, gap5, total);
@@ -1189,6 +1195,13 @@ public class ShowShipmentView extends VerticalLayout {
         dialog.getFooter().add(anchor);
 
         return dialog;
+    }
+
+    private String addPrefixSuffixToWordAmountByCurrency(AmountCurrency currency, String amount) {
+        if (currency == null) {
+            currency = AmountCurrency.BDT;
+        }
+        return "In words: " + amount  + currency.getCurrencyName() + " Only";
     }
 
     private static Button getConfirmDialogButton(Dialog dialog) {

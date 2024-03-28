@@ -61,18 +61,18 @@ public class Util {
 
     public static String getAmountInWords(BigDecimal amount) {
         if (amount == null) {
-            return "In Words: Zero Only";
+            return "Zero";
         }
         if (amount.toPlainString().contains(".")) {
             String [] splitAmount = amount.toPlainString().split("\\.");
             BigDecimal nonDecimalAmount = new BigDecimal(splitAmount[0]);
             BigDecimal decimalAmount = new BigDecimal(splitAmount[1]);
-            String nonDecimalPart = getRoundedAmountInWords(nonDecimalAmount) + " Taka ";
+            String nonDecimalPart = getRoundedAmountInWords(nonDecimalAmount);
             String decimalPart = getRoundedAmountInWords(decimalAmount);
             decimalPart = decimalPart.equals("Zero") ? "" : decimalPart + " Paisa";
-            return "In Words: " + nonDecimalPart + decimalPart + " Taka Only";
+            return nonDecimalPart + decimalPart;
         } else {
-            return "In Words: " + getRoundedAmountInWords(amount) + " Taka Only";
+            return getRoundedAmountInWords(amount);
         }
     }
 

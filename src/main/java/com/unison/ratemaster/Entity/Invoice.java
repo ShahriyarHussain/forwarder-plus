@@ -24,7 +24,8 @@ public class Invoice {
     private BigDecimal conversionRate;
     private BigDecimal freightTotalInLocalCurr;
     private BigDecimal subTotal;
-    private AmountCurrency currency;
+    private AmountCurrency freightCurrency;
+    private AmountCurrency localCurrency;
     private String goodsDescription;
     private String otherDesc1;
     private BigDecimal other1Amt;
