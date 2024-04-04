@@ -11,6 +11,7 @@ import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -933,51 +934,18 @@ public class ShowShipmentView extends VerticalLayout {
         total.setValue(invoice.getSubTotal() == null ? BigDecimal.ZERO : invoice.getSubTotal());
         total.setReadOnly(true);
 
-        BigDecimalField freightInBDT = new BigDecimalField("Freight in BDT", "");
-        freightInBDT.setValue(invoice.getFreightTotalInLocalCurr() == null ? BigDecimal.ZERO : invoice.getFreightTotalInLocalCurr());
-        freightInBDT.setReadOnly(true);
-
         BigDecimalField totalFreight = new BigDecimalField("Total Freight", "");
         totalFreight.setValue(invoice.getTotalFreight() == null ? BigDecimal.ZERO : invoice.getTotalFreight());
         totalFreight.setReadOnly(true);
 
-        BigDecimalField ratePerContField = new BigDecimalField("Rate Per Container", "");
-        ratePerContField.setValue(invoice.getRatePerContainer() == null ? BigDecimal.ZERO : invoice.getRatePerContainer());
-        ratePerContField.setValueChangeMode(ValueChangeMode.EAGER);
-
         BigDecimalField conversionRate = new BigDecimalField("Conversion Rate", "");
         conversionRate.setValue(invoice.getConversionRate() == null ? BigDecimal.ZERO : invoice.getConversionRate());
 
-        TextField goodDescription = new TextField("Goods Description");
-        goodDescription.setValue(Objects.requireNonNullElse(invoice.getGoodsDescription(), ""));
+        TextField description = new TextField("Description");
+        IntegerField quantity = new IntegerField("Quantity");
+        BigDecimalField rate = new BigDecimalField("Rate Per Product");
+        Checkbox foreignCurrency = new Checkbox("Foreign Currency ?");
 
-        TextField otherField1 = new TextField("Other Cost Name 1:");
-        otherField1.setValue(Objects.requireNonNullElse(invoice.getOtherDesc1(), ""));
-
-        BigDecimalField otherCost1Amt = new BigDecimalField("Other Cost 1 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost1Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost1Amt.setValue(invoice.getOther1Amt() == null ? BigDecimal.ZERO : invoice.getOther1Amt());
-
-        TextField otherField2 = new TextField("Other Cost Name 2:");
-        otherField2.setValue(Objects.requireNonNullElse(invoice.getOtherDesc2(), ""));
-
-        BigDecimalField otherCost2Amt = new BigDecimalField("Other Cost 2 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost2Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost2Amt.setValue(invoice.getOther2Amt() == null ? BigDecimal.ZERO : invoice.getOther2Amt());
-
-        TextField otherField3 = new TextField("Other Cost Name 3:");
-        otherField3.setValue(Objects.requireNonNullElse(invoice.getOtherDesc3(), ""));
-
-        BigDecimalField otherCost3Amt = new BigDecimalField("Other Cost 3 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost3Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost3Amt.setValue(invoice.getOther3Amt() == null ? BigDecimal.ZERO : invoice.getOther3Amt());
-
-        TextField otherField4 = new TextField("Other Cost Name 4:");
-        otherField4.setValue(Objects.requireNonNullElse(invoice.getOtherDesc4(), ""));
-
-        BigDecimalField otherCost4Amt = new BigDecimalField("Other Cost 4 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost4Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost4Amt.setValue(invoice.getOther4Amt() == null ? BigDecimal.ZERO : invoice.getOther4Amt());
 
         ComboBox<BankDetails> bankDetailsComboBox = new ComboBox<>("Choose Bank Details");
         bankDetailsComboBox.setItems(bankDetailsService.getAllBankDetails());
@@ -990,75 +958,17 @@ public class ShowShipmentView extends VerticalLayout {
         contactDetailsComboBox.setItemLabelGenerator(ContactDetails::getName);
         contactDetailsComboBox.setValue(invoice.getContactDetails());
 
-        otherCost1Amt.addValueChangeListener(e -> {
-                    if (otherCost1Amt.getValue() == null) {
-                        otherCost1Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
-                }
-        );
-        otherCost2Amt.addValueChangeListener(e -> {
-                    if (otherCost2Amt.getValue() == null) {
-                        otherCost2Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
-                }
-        );
-        otherCost3Amt.addValueChangeListener(e -> {
-                    if (otherCost3Amt.getValue() == null) {
-                        otherCost3Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
-                }
-        );
-        otherCost4Amt.addValueChangeListener(e -> {
-                    if (otherCost4Amt.getValue() == null) {
-                        otherCost4Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
-                }
-        );
-        ratePerContField.addValueChangeListener(e -> {
-                    totalFreight.setValue(e.getValue()
-                            .multiply(BigDecimal.valueOf(numOfContainer.getValue())));
-                    freightInBDT.setValue(totalFreight.getValue().multiply(conversionRate.getValue()));
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue())
-                            .add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue()));
-                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
-                }
-        );
 
         Button saveInvoiceButton = new Button("Save Invoice", new Icon(VaadinIcon.DATABASE));
         saveInvoiceButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         saveInvoiceButton.addClickListener(event -> {
-            invoice.setFreightTotalInLocalCurr(freightInBDT.getValue());
             invoice.setSubTotal(total.getValue());
             invoice.setExpNo(expNo.getValue());
             invoice.setExpDate(expDate.getValue());
-            invoice.setRatePerContainer(ratePerContField.getValue());
             invoice.setTotalFreight(totalFreight.getValue());
             invoice.setConversionRate(conversionRate.getValue());
             invoice.setFreightCurrency(freightCurrencyComboBox.getValue());
             invoice.setLocalCurrency(localCurrencyComboBox.getValue());
-            invoice.setGoodsDescription(goodDescription.getValue());
-
-            invoice.setOtherDesc1(otherField1.getValue());
-            invoice.setOther1Amt(otherCost1Amt.getValue());
-            invoice.setOtherDesc2(otherField2.getValue());
-            invoice.setOther2Amt(otherCost2Amt.getValue());
-            invoice.setOtherDesc3(otherField3.getValue());
-            invoice.setOther3Amt(otherCost3Amt.getValue());
-            invoice.setOtherDesc4(otherField4.getValue());
-            invoice.setOther4Amt(otherCost4Amt.getValue());
-
             invoice.setBankDetails(bankDetailsComboBox.getValue());
             invoice.setContactDetails(contactDetailsComboBox.getValue());
             invoiceService.saveInvoice(invoice);
@@ -1093,32 +1003,8 @@ public class ShowShipmentView extends VerticalLayout {
 
             parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(conversionRate.getValue()
                     .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("FREIGHT_RATE", Util.getFormattedBigDecimal(ratePerContField.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
             parameters.put("TOTAL_FREIGHT", Util.getFormattedBigDecimal(totalFreight.getValue()
                     .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("FREIGHT_LOCAL", Util.getFormattedBigDecimal(freightInBDT.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("GOODS_DESCRIPTION", goodDescription.getValue());
-            parameters.put("DESC_2", otherField1.getValue());
-            parameters.put("DESC_2_AMT", Util.getFormattedBigDecimal(otherCost1Amt.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("DESC_3", otherField2.getValue());
-            parameters.put("DESC_3_AMT", Util.getFormattedBigDecimal(otherCost2Amt.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-
-            if (otherField3.getValue() != null && !otherField3.getValue().isEmpty()) {
-                reportName = "Invoice_row_3.jasper";
-                parameters.put("DESC_4", otherField3.getValue());
-                parameters.put("DESC_4_AMT", Util.getFormattedBigDecimal(otherCost3Amt.getValue()
-                        .setScale(2, RoundingMode.UNNECESSARY)));
-            }
-            if (otherField4.getValue() != null && !otherField4.getValue().isEmpty()) {
-                reportName = "Invoice_row_4.jasper";
-                parameters.put("DESC_5", otherField4.getValue());
-                parameters.put("DESC_5_AMT", Util.getFormattedBigDecimal(otherCost4Amt.getValue()
-                        .setScale(2, RoundingMode.UNNECESSARY)));
-            }
 
             parameters.put("TOTAL", Util.getFormattedBigDecimal(total.getValue().setScale(2,
                     RoundingMode.UNNECESSARY)));
@@ -1164,9 +1050,8 @@ public class ShowShipmentView extends VerticalLayout {
 
         horizontalLayout.add(inWords);
         FormLayout invoiceForm = new FormLayout();
-        invoiceForm.add(freightCurrencyComboBox, localCurrencyComboBox, conversionRate, expNo, expDate, gap0, line1, goodDescription, numOfContainer,
-                ratePerContField, totalFreight, freightInBDT, otherField1, gap1, otherCost1Amt, otherField2, gap2,
-                otherCost2Amt, otherField3, gap3, otherCost3Amt, otherField4, gap4, otherCost4Amt, line3,
+        invoiceForm.add(freightCurrencyComboBox, localCurrencyComboBox, conversionRate, expNo, expDate, gap0, line1,
+                description, rate, quantity, foreignCurrency,
                 horizontalLayout, gap5, total);
 
         invoiceForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 5));

@@ -152,9 +152,7 @@ public class CreateShipmentView extends VerticalLayout {
 
             Invoice invoice = new Invoice();
             invoice.setInvoiceNo(invoiceService.getInvoiceNo());
-            invoice.setGoodsDescription(shipment.getCommodity().getName());
             invoice = invoiceService.saveInvoice(invoice);
-
             shipment.setInvoice(invoice);
 
             Booking booking = new Booking();
