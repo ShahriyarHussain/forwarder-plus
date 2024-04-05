@@ -2,6 +2,7 @@ package com.unison.ratemaster.View.Shipment;
 
 import com.unison.ratemaster.Entity.*;
 import com.unison.ratemaster.Enum.*;
+import com.unison.ratemaster.Repository.InvoiceItemsService;
 import com.unison.ratemaster.Service.*;
 import com.unison.ratemaster.Util.ShipmentFilter;
 import com.unison.ratemaster.Util.Util;
@@ -69,14 +70,15 @@ public class ShowShipmentView extends VerticalLayout {
     private final CarrierService carrierService;
     private final BankDetailsService bankDetailsService;
     private final ContactDetailsService contactDetailsService;
+    private final InvoiceItemsService invoiceItemsService;
 
     private byte[] masterBl;
     private final Grid<Shipment> grid;
 
     public ShowShipmentView(ShipmentService shipmentService, ClientService clientService, ScheduleService scheduleService,
-                            PortService portService,BookingService bookingService, CommodityService commodityService,
+                            PortService portService, BookingService bookingService, CommodityService commodityService,
                             InvoiceService invoiceService, CarrierService carrierService, BankDetailsService bankDetailsService,
-                            ContactDetailsService contactDetailsService) {
+                            ContactDetailsService contactDetailsService, InvoiceItemsService invoiceItemsService) {
 
         this.shipmentService = shipmentService;
         this.clientService = clientService;
@@ -88,6 +90,7 @@ public class ShowShipmentView extends VerticalLayout {
         this.carrierService = carrierService;
         this.bankDetailsService = bankDetailsService;
         this.contactDetailsService = contactDetailsService;
+        this.invoiceItemsService = invoiceItemsService;
 
 
         H2 title = new H2("View Shipment");
@@ -898,6 +901,7 @@ public class ShowShipmentView extends VerticalLayout {
     public Dialog createInvoiceMakerDialog(Shipment shipment) {
 
         Invoice invoice = shipment.getInvoice();
+        Set<FreightDetails> invoiceItems = invoice.getFreightDetails();
 
         Dialog dialog = new Dialog();
         HorizontalLayout horizontalLayout = new HorizontalLayout();
@@ -917,10 +921,10 @@ public class ShowShipmentView extends VerticalLayout {
         DatePicker expDate = new DatePicker("Exp Date");
         expDate.setValue(invoice.getExpDate());
 
-        ComboBox<AmountCurrency> freightCurrencyComboBox = new ComboBox<>("Carrier Currency");
-        freightCurrencyComboBox.setItems(AmountCurrency.values());
-        freightCurrencyComboBox.setItemLabelGenerator(curr -> curr.toString() + " - " + curr.getCurrencyName());
-        freightCurrencyComboBox.setValue(invoice.getFreightCurrency());
+        ComboBox<AmountCurrency> foreignCurrComboBox = new ComboBox<>("Carrier Currency");
+        foreignCurrComboBox.setItems(AmountCurrency.values());
+        foreignCurrComboBox.setItemLabelGenerator(curr -> curr.toString() + " - " + curr.getCurrencyName());
+        foreignCurrComboBox.setValue(invoice.getFreightCurrency());
 
         ComboBox<AmountCurrency> localCurrencyComboBox = new ComboBox<>("Local Currency");
         localCurrencyComboBox.setItems(AmountCurrency.values());
@@ -928,23 +932,78 @@ public class ShowShipmentView extends VerticalLayout {
         localCurrencyComboBox.setValue(invoice.getLocalCurrency());
 
         Text inWords = new Text("Zero");
-        inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(invoice.getSubTotal())));
+        inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+                Util.getAmountInWords(invoice.getSubTotal())));
 
         BigDecimalField total = new BigDecimalField("Total", BigDecimal.ZERO, "");
         total.setValue(invoice.getSubTotal() == null ? BigDecimal.ZERO : invoice.getSubTotal());
         total.setReadOnly(true);
 
-        BigDecimalField totalFreight = new BigDecimalField("Total Freight", "");
-        totalFreight.setValue(invoice.getTotalFreight() == null ? BigDecimal.ZERO : invoice.getTotalFreight());
-        totalFreight.setReadOnly(true);
-
         BigDecimalField conversionRate = new BigDecimalField("Conversion Rate", "");
-        conversionRate.setValue(invoice.getConversionRate() == null ? BigDecimal.ZERO : invoice.getConversionRate());
+        conversionRate.setValue(invoice.getConversionRate() == null ? BigDecimal.ONE : invoice.getConversionRate());
 
         TextField description = new TextField("Description");
-        IntegerField quantity = new IntegerField("Quantity");
         BigDecimalField rate = new BigDecimalField("Rate Per Product");
+        IntegerField quantity = new IntegerField("Quantity");
+        BigDecimalField itemTotalInLocalCurr = new BigDecimalField("Sub Total");
         Checkbox foreignCurrency = new Checkbox("Foreign Currency ?");
+
+        rate.setValueChangeMode(ValueChangeMode.ON_BLUR);
+        conversionRate.setValueChangeMode(ValueChangeMode.ON_BLUR);
+        quantity.setValueChangeMode(ValueChangeMode.EAGER);
+
+        rate.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue()))
+        );
+        quantity.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue()))
+        );
+        foreignCurrency.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue()))
+        );
+        conversionRate.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                        calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue())));
+
+
+        Grid<FreightDetails> invoiceItemGrid = new Grid<>();
+
+        invoiceItemGrid.setItems(invoiceItems);
+        invoiceItemGrid.addColumn(FreightDetails::getDescription).setHeader("Description");
+        invoiceItemGrid.addColumn(FreightDetails::getRate).setHeader("Rate");
+        invoiceItemGrid.addColumn(FreightDetails::getQuantity).setHeader("Quantity");
+        Grid.Column<FreightDetails> foreignCurrTotal = invoiceItemGrid.addColumn(FreightDetails::getTotalInForeignCurr)
+                .setHeader(getTotalColumnName(foreignCurrComboBox.getValue()));
+        Grid.Column<FreightDetails> localCurrTotal = invoiceItemGrid.addColumn(FreightDetails::getTotalInLocalCurr)
+                .setHeader(getTotalColumnName(localCurrencyComboBox.getValue()));
+        invoiceItemGrid.addComponentColumn(invoiceItem -> {
+            Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
+            deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            deleteButton.addClickListener(event -> {
+                invoiceItems.remove(invoiceItem);
+                invoiceItemGrid.setVisible(!invoiceItems.isEmpty());
+                invoiceItemGrid.setItems(invoiceItems);
+                total.setValue(invoiceItems.stream()
+                        .map(FreightDetails::getTotalInLocalCurr)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add));
+                inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+                        Util.getAmountInWords(total.getValue())));
+            });
+            return deleteButton;
+        });
+        invoiceItemGrid.setMaxHeight(15, Unit.EM);
+        invoiceItemGrid.setVisible(!invoiceItems.isEmpty());
+        invoiceItemGrid.setItems(invoiceItems);
+
+        foreignCurrComboBox.addValueChangeListener(event -> {
+            foreignCurrTotal.setHeader(getTotalColumnName(event.getValue()));
+            conversionRate.setValue(BigDecimal.ONE);
+        });
+        localCurrencyComboBox.addValueChangeListener(event -> {
+            localCurrTotal.setHeader(getTotalColumnName(event.getValue()));
+            conversionRate.setValue(BigDecimal.ONE);
+        });
+
+
 
 
         ComboBox<BankDetails> bankDetailsComboBox = new ComboBox<>("Choose Bank Details");
@@ -965,14 +1024,50 @@ public class ShowShipmentView extends VerticalLayout {
             invoice.setSubTotal(total.getValue());
             invoice.setExpNo(expNo.getValue());
             invoice.setExpDate(expDate.getValue());
-            invoice.setTotalFreight(totalFreight.getValue());
             invoice.setConversionRate(conversionRate.getValue());
-            invoice.setFreightCurrency(freightCurrencyComboBox.getValue());
+            invoice.setFreightCurrency(foreignCurrComboBox.getValue());
             invoice.setLocalCurrency(localCurrencyComboBox.getValue());
             invoice.setBankDetails(bankDetailsComboBox.getValue());
             invoice.setContactDetails(contactDetailsComboBox.getValue());
-            invoiceService.saveInvoice(invoice);
-            Util.getNotificationForSuccess("Saved Successfully").open();
+
+            try {
+                invoice.setFreightDetails(invoiceItems);
+                invoiceItemsService.saveInvoiceItems(invoiceItems);
+                invoiceService.saveInvoice(invoice);
+                Util.getNotificationForSuccess("Saved Successfully").open();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Util.getNotificationForError("Error!").open();
+            }
+
+        });
+
+        Button createDetailsButton = new Button("Add", new Icon(VaadinIcon.PLUS));
+        createDetailsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        createDetailsButton.addClickListener(event -> {
+            try {
+                FreightDetails invoiceItem = new FreightDetails();
+                invoiceItem.setInvoice(invoice);
+                invoiceItem.setRate(rate.getValue());
+                invoiceItem.setQuantity(quantity.getValue());
+                invoiceItem.setDescription(description.getValue());
+                invoiceItem.setForeignCurr(foreignCurrency.getValue());
+                invoiceItem.setTotalInForeignCurr(calculateItemTotal(rate.getValue(), quantity.getValue(),
+                        foreignCurrency.getValue(), conversionRate.getValue()));
+                invoiceItem.setTotalInLocalCurr(itemTotalInLocalCurr.getValue());
+
+                invoiceItems.add(invoiceItem);
+                invoiceItemGrid.setItems(invoiceItems);
+                invoiceItemGrid.setVisible(true);
+                total.setValue(invoiceItems.stream()
+                        .map(FreightDetails::getTotalInLocalCurr)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add));
+                inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+                        Util.getAmountInWords(total.getValue())));
+            } catch (Exception e) {
+                Util.getNotificationForError("Error Occurred").open();
+                e.printStackTrace();
+            }
         });
 
         Button prepareInvoiceButton = new Button("Download Invoice", new Icon(VaadinIcon.DOWNLOAD));
@@ -999,11 +1094,9 @@ public class ShowShipmentView extends VerticalLayout {
             parameters.put("SHIPPER_EMAIL", shipment.getShipper().getEmail());
             parameters.put("LOGO_URL", Util.imagePath);
             parameters.put("SHIPPER_INV_NO", shipment.getInvoiceNo());
-            parameters.put("FREIGHT_CURRENCY", freightCurrencyComboBox.getValue().toString());
+            parameters.put("FREIGHT_CURRENCY", foreignCurrency.getValue().toString());
 
             parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(conversionRate.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("TOTAL_FREIGHT", Util.getFormattedBigDecimal(totalFreight.getValue()
                     .setScale(2, RoundingMode.UNNECESSARY)));
 
             parameters.put("TOTAL", Util.getFormattedBigDecimal(total.getValue().setScale(2,
@@ -1050,11 +1143,12 @@ public class ShowShipmentView extends VerticalLayout {
 
         horizontalLayout.add(inWords);
         FormLayout invoiceForm = new FormLayout();
-        invoiceForm.add(freightCurrencyComboBox, localCurrencyComboBox, conversionRate, expNo, expDate, gap0, line1,
-                description, rate, quantity, foreignCurrency,
+        invoiceForm.add(foreignCurrComboBox, localCurrencyComboBox, conversionRate, expNo, expDate, gap0, line1, gap0,
+                foreignCurrency, description, rate, quantity, itemTotalInLocalCurr, createDetailsButton,
+                invoiceItemGrid,
                 horizontalLayout, gap5, total);
 
-        invoiceForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 5));
+        invoiceForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 6));
         //invoiceForm.setColspan(gap0, 1);
         invoiceForm.setColspan(line1, 5);
         invoiceForm.setColspan(line2, 5);
@@ -1065,6 +1159,7 @@ public class ShowShipmentView extends VerticalLayout {
         invoiceForm.setColspan(gap4, 3);
         invoiceForm.setColspan(gap5, 2);
         invoiceForm.setColspan(horizontalLayout, 2);
+        invoiceForm.setColspan(invoiceItemGrid, 5);
 
         FormLayout contactForm = new FormLayout();
         contactForm.add(bankDetailsComboBox, contactDetailsComboBox);
@@ -1082,11 +1177,27 @@ public class ShowShipmentView extends VerticalLayout {
         return dialog;
     }
 
+    private String getTotalColumnName(AmountCurrency currency) {
+        if (currency == null) {
+            return "Total";
+        }
+        return "Total in " + currency;
+    }
+
+    private BigDecimal calculateItemTotal(BigDecimal rate, Integer quantity, Boolean isForeignCurr, BigDecimal convRate) {
+        if (rate == null || quantity == null || convRate == null) {
+            System.out.println("NULL FOUND IN CALCULATION");
+            return BigDecimal.ZERO;
+        }
+        BigDecimal conversionRate = isForeignCurr ? convRate : BigDecimal.ONE;
+        return rate.multiply(new BigDecimal(quantity)).multiply(conversionRate);
+    }
+
     private String addPrefixSuffixToWordAmountByCurrency(AmountCurrency currency, String amount) {
         if (currency == null) {
             currency = AmountCurrency.BDT;
         }
-        return "In words: " + amount  + currency.getCurrencyName() + " Only";
+        return "In words: " + amount + " " + currency.getCurrencyName() + " Only";
     }
 
     private static Button getConfirmDialogButton(Dialog dialog) {
