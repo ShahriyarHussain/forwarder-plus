@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @Entity
 @Getter
 @Setter
-public class FreightDetails {
+public class InvoiceItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -17,7 +17,8 @@ public class FreightDetails {
     private Invoice invoice;
     private String description;
     private long quantity;
-    private boolean isForeignCurr;
+    private String itemUnit;
+    private String foreignCurrency;
     private BigDecimal rate;
     private BigDecimal totalInForeignCurr;
     private BigDecimal totalInLocalCurr;

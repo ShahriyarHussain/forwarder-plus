@@ -1,6 +1,6 @@
 package com.unison.ratemaster.Repository;
 
-import com.unison.ratemaster.Entity.FreightDetails;
+import com.unison.ratemaster.Entity.InvoiceItem;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +11,7 @@ import java.util.Set;
 public class InvoiceItemsService {
     private final InvoiceItemsRepository invoiceItemsRepository;
 
-    public void saveInvoiceItems(Set<FreightDetails> freightDetails) {
-        invoiceItemsRepository.saveAll(freightDetails);
+    public void saveInvoiceItems(Set<InvoiceItem> invoiceItems) {
+        invoiceItemsRepository.saveAll(invoiceItems);
     }
 }

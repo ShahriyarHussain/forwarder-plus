@@ -1,5 +1,6 @@
 package com.unison.ratemaster.View.Shipment;
 
+import com.unison.ratemaster.Dto.InvoiceItemDto;
 import com.unison.ratemaster.Entity.*;
 import com.unison.ratemaster.Enum.*;
 import com.unison.ratemaster.Repository.InvoiceItemsService;
@@ -39,6 +40,7 @@ import com.vaadin.flow.server.StreamResource;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperRunManager;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 
 import javax.annotation.security.PermitAll;
 import java.io.ByteArrayInputStream;
@@ -51,6 +53,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 @PageTitle("View Shipments")
@@ -718,6 +721,13 @@ public class ShowShipmentView extends VerticalLayout {
         Button saveButton = new Button("Save Booking");
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         saveButton.addClickListener(event -> {
+            if (containerList.size() != booking.getNumOfContainers()) {
+                new ConfirmDialog("Data Mismatch!",
+                        "Number of Containers Does Not Match With Entered Containers." + System.lineSeparator() +
+                                "Entered Containers: " + containerList.size() + ", " + " Number of Containers = " + booking.getNumOfContainers(),
+                        "Go Back", e -> getChildren().close()).open();
+                return;
+            }
             booking.setBookingNo(bookingNo.getValue());
             booking.setContainerType(containerType.getValue());
             booking.setInvoiceNo(invoiceNo.getValue());
@@ -901,7 +911,7 @@ public class ShowShipmentView extends VerticalLayout {
     public Dialog createInvoiceMakerDialog(Shipment shipment) {
 
         Invoice invoice = shipment.getInvoice();
-        Set<FreightDetails> invoiceItems = invoice.getFreightDetails();
+        Set<InvoiceItem> invoiceItems = invoice.getInvoiceItems();
 
         Dialog dialog = new Dialog();
         HorizontalLayout horizontalLayout = new HorizontalLayout();
@@ -924,7 +934,7 @@ public class ShowShipmentView extends VerticalLayout {
         ComboBox<AmountCurrency> foreignCurrComboBox = new ComboBox<>("Carrier Currency");
         foreignCurrComboBox.setItems(AmountCurrency.values());
         foreignCurrComboBox.setItemLabelGenerator(curr -> curr.toString() + " - " + curr.getCurrencyName());
-        foreignCurrComboBox.setValue(invoice.getFreightCurrency());
+        foreignCurrComboBox.setValue(invoice.getForeignCurrency());
 
         ComboBox<AmountCurrency> localCurrencyComboBox = new ComboBox<>("Local Currency");
         localCurrencyComboBox.setItems(AmountCurrency.values());
@@ -933,10 +943,10 @@ public class ShowShipmentView extends VerticalLayout {
 
         Text inWords = new Text("Zero");
         inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
-                Util.getAmountInWords(invoice.getSubTotal())));
+                Util.getAmountInWords(invoice.getGrandTotal())));
 
         BigDecimalField total = new BigDecimalField("Total", BigDecimal.ZERO, "");
-        total.setValue(invoice.getSubTotal() == null ? BigDecimal.ZERO : invoice.getSubTotal());
+        total.setValue(invoice.getGrandTotal() == null ? BigDecimal.ZERO : invoice.getGrandTotal());
         total.setReadOnly(true);
 
         BigDecimalField conversionRate = new BigDecimalField("Conversion Rate", "");
@@ -945,6 +955,7 @@ public class ShowShipmentView extends VerticalLayout {
         TextField description = new TextField("Description");
         BigDecimalField rate = new BigDecimalField("Rate Per Product");
         IntegerField quantity = new IntegerField("Quantity");
+        TextField itemUnit = new TextField("Unit");
         BigDecimalField itemTotalInLocalCurr = new BigDecimalField("Sub Total");
         Checkbox foreignCurrency = new Checkbox("Foreign Currency ?");
 
@@ -965,15 +976,16 @@ public class ShowShipmentView extends VerticalLayout {
                         calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue())));
 
 
-        Grid<FreightDetails> invoiceItemGrid = new Grid<>();
+        Grid<InvoiceItem> invoiceItemGrid = new Grid<>();
 
         invoiceItemGrid.setItems(invoiceItems);
-        invoiceItemGrid.addColumn(FreightDetails::getDescription).setHeader("Description");
-        invoiceItemGrid.addColumn(FreightDetails::getRate).setHeader("Rate");
-        invoiceItemGrid.addColumn(FreightDetails::getQuantity).setHeader("Quantity");
-        Grid.Column<FreightDetails> foreignCurrTotal = invoiceItemGrid.addColumn(FreightDetails::getTotalInForeignCurr)
+        invoiceItemGrid.addColumn(InvoiceItem::getDescription).setHeader("Description");
+        invoiceItemGrid.addColumn(InvoiceItem::getRate).setHeader("Rate");
+        invoiceItemGrid.addColumn(InvoiceItem::getQuantity).setHeader("Quantity");
+        invoiceItemGrid.addColumn(InvoiceItem::getItemUnit).setHeader("Unit");
+        Grid.Column<InvoiceItem> foreignCurrTotal = invoiceItemGrid.addColumn(InvoiceItem::getTotalInForeignCurr)
                 .setHeader(getTotalColumnName(foreignCurrComboBox.getValue()));
-        Grid.Column<FreightDetails> localCurrTotal = invoiceItemGrid.addColumn(FreightDetails::getTotalInLocalCurr)
+        Grid.Column<InvoiceItem> localCurrTotal = invoiceItemGrid.addColumn(InvoiceItem::getTotalInLocalCurr)
                 .setHeader(getTotalColumnName(localCurrencyComboBox.getValue()));
         invoiceItemGrid.addComponentColumn(invoiceItem -> {
             Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
@@ -983,7 +995,7 @@ public class ShowShipmentView extends VerticalLayout {
                 invoiceItemGrid.setVisible(!invoiceItems.isEmpty());
                 invoiceItemGrid.setItems(invoiceItems);
                 total.setValue(invoiceItems.stream()
-                        .map(FreightDetails::getTotalInLocalCurr)
+                        .map(InvoiceItem::getTotalInLocalCurr)
                         .reduce(BigDecimal.ZERO, BigDecimal::add));
                 inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
                         Util.getAmountInWords(total.getValue())));
@@ -1003,9 +1015,6 @@ public class ShowShipmentView extends VerticalLayout {
             conversionRate.setValue(BigDecimal.ONE);
         });
 
-
-
-
         ComboBox<BankDetails> bankDetailsComboBox = new ComboBox<>("Choose Bank Details");
         bankDetailsComboBox.setItems(bankDetailsService.getAllBankDetails());
         bankDetailsComboBox.setItemLabelGenerator(bankDetails -> bankDetails.getAccName() + " - " + bankDetails.getBankName()
@@ -1021,17 +1030,17 @@ public class ShowShipmentView extends VerticalLayout {
         Button saveInvoiceButton = new Button("Save Invoice", new Icon(VaadinIcon.DATABASE));
         saveInvoiceButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         saveInvoiceButton.addClickListener(event -> {
-            invoice.setSubTotal(total.getValue());
+            invoice.setGrandTotal(total.getValue());
             invoice.setExpNo(expNo.getValue());
             invoice.setExpDate(expDate.getValue());
             invoice.setConversionRate(conversionRate.getValue());
-            invoice.setFreightCurrency(foreignCurrComboBox.getValue());
+            invoice.setForeignCurrency(foreignCurrComboBox.getValue());
             invoice.setLocalCurrency(localCurrencyComboBox.getValue());
             invoice.setBankDetails(bankDetailsComboBox.getValue());
             invoice.setContactDetails(contactDetailsComboBox.getValue());
 
             try {
-                invoice.setFreightDetails(invoiceItems);
+                invoice.setInvoiceItems(invoiceItems);
                 invoiceItemsService.saveInvoiceItems(invoiceItems);
                 invoiceService.saveInvoice(invoice);
                 Util.getNotificationForSuccess("Saved Successfully").open();
@@ -1046,21 +1055,25 @@ public class ShowShipmentView extends VerticalLayout {
         createDetailsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         createDetailsButton.addClickListener(event -> {
             try {
-                FreightDetails invoiceItem = new FreightDetails();
+                InvoiceItem invoiceItem = new InvoiceItem();
                 invoiceItem.setInvoice(invoice);
                 invoiceItem.setRate(rate.getValue());
                 invoiceItem.setQuantity(quantity.getValue());
                 invoiceItem.setDescription(description.getValue());
-                invoiceItem.setForeignCurr(foreignCurrency.getValue());
-                invoiceItem.setTotalInForeignCurr(calculateItemTotal(rate.getValue(), quantity.getValue(),
-                        foreignCurrency.getValue(), conversionRate.getValue()));
+                invoiceItem.setItemUnit(itemUnit.getValue());
+
+                invoiceItem.setForeignCurrency(foreignCurrency.getValue() ?
+                        foreignCurrComboBox.getValue().toString() : localCurrencyComboBox.getValue().toString());
+                invoiceItem.setTotalInForeignCurr(
+                        calculateItemTotal(rate.getValue(), quantity.getValue(),false, BigDecimal.ONE));
+
                 invoiceItem.setTotalInLocalCurr(itemTotalInLocalCurr.getValue());
 
                 invoiceItems.add(invoiceItem);
                 invoiceItemGrid.setItems(invoiceItems);
                 invoiceItemGrid.setVisible(true);
                 total.setValue(invoiceItems.stream()
-                        .map(FreightDetails::getTotalInLocalCurr)
+                        .map(InvoiceItem::getTotalInLocalCurr)
                         .reduce(BigDecimal.ZERO, BigDecimal::add));
                 inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
                         Util.getAmountInWords(total.getValue())));
@@ -1070,60 +1083,39 @@ public class ShowShipmentView extends VerticalLayout {
             }
         });
 
+        HorizontalLayout invoiceItemSubLayout = new HorizontalLayout();
+        invoiceItemSubLayout.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        invoiceItemSubLayout.add(foreignCurrency, createDetailsButton);
+
         Button prepareInvoiceButton = new Button("Download Invoice", new Icon(VaadinIcon.DOWNLOAD));
         prepareInvoiceButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        Anchor anchor = new Anchor(new StreamResource("Invoice" + shipment.getBlNo() + ".pdf", (InputStreamFactory) () -> {
-            final Map<String, Object> parameters = new HashMap<>();
+        Anchor anchor = new Anchor(new StreamResource("Invoice-" + shipment.getBlNo() + ".pdf", (InputStreamFactory) () -> {
 
-            String reportName = "Invoice.jasper";
+            List<InvoiceItemDto> invoiceItemDtos = invoice.getInvoiceItems().stream()
+                    .map(InvoiceItemDto::new)
+                    .sorted(Comparator.comparing(InvoiceItemDto::getSubtotal))
+                    .collect(Collectors.toList());
+            for (int i = 0, count = 1; i < invoiceItemDtos.size(); i++) {
+                invoiceItemDtos.get(i).setSlNo(count++);
+            }
 
-            parameters.put("BL_NO", shipment.getBlNo());
-            parameters.put("ADDRESS", shipment.getShipper().getAddress());
-            parameters.put("INVOICE_NO", shipment.getInvoice().getInvoiceNo());
-            parameters.put("SHIPPER_NAME", shipment.getShipper().getName());
-            parameters.put("CONTAINER", numOfContainer.getValue() + "x" + shipment.getBooking().getContainerSize().getContainerSize());
-            parameters.put("COMMODITY", shipment.getCommodity().getName());
-            parameters.put("CONTAINERS", getContainers(shipment.getBooking()));
-            parameters.put("INVOICE_DATE", getFormattedDate(LocalDate.now()));
-            parameters.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortName() + ", "
-                    + shipment.getSchedule().getPortOfLoading().getPortCountry());
-            parameters.put("DEST_PORT", shipment.getSchedule().getPortOfDestination().getPortName() + ", "
-                    + shipment.getSchedule().getPortOfDestination().getPortCountry());
-            parameters.put("POL_ETD", getFormattedDate(shipment.getSchedule().getLoadingPortEta()));
-            parameters.put("DEST_ETA", getFormattedDate(shipment.getSchedule().getDestinationPortEta()));
-            parameters.put("SHIPPER_EMAIL", shipment.getShipper().getEmail());
-            parameters.put("LOGO_URL", Util.imagePath);
-            parameters.put("SHIPPER_INV_NO", shipment.getInvoiceNo());
-            parameters.put("FREIGHT_CURRENCY", foreignCurrency.getValue().toString());
+            System.out.println("slNo -  description - quantityWithUnit  -  rate  -  totalInForeignCurr  -  subtotal");
+            invoiceItemDtos.forEach(item -> System.out.println(item.toString()));
 
-            parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(conversionRate.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
+            String reportName = "Invoice_new.jasper";
 
-            parameters.put("TOTAL", Util.getFormattedBigDecimal(total.getValue().setScale(2,
-                    RoundingMode.UNNECESSARY)));
-            parameters.put("TOTAL_IN_WORD", inWords.getText());
-            parameters.put("BANK_NAME", bankDetailsComboBox.getValue().getBankName());
-            parameters.put("AC_NAME", bankDetailsComboBox.getValue().getAccName());
-            parameters.put("AC_NO", bankDetailsComboBox.getValue().getAccNo());
-            parameters.put("ROUTING_NO", bankDetailsComboBox.getValue().getRoutingNo());
-            parameters.put("BRANCH", bankDetailsComboBox.getValue().getBranchName());
-            parameters.put("SIGNED_BY", contactDetailsComboBox.getValue().getName());
-            parameters.put("SIGNED_BY_EMAIL", contactDetailsComboBox.getValue().getEmail());
-            parameters.put("SIGNED_BY_CONTACT", contactDetailsComboBox.getValue().getContactNo());
-            parameters.put("EXP_NO", expNo.getValue());
-            parameters.put("EXP_DATE", getFormattedDate(expDate.getValue()));
-            parameters.put("VESSEL", shipment.getSchedule().getFeederVesselName());
-
+            final Map<String, Object> parameters = getInvoiceReportParam(shipment);
+            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(invoiceItemDtos);
+            parameters.put("REPORT_DATA_SOURCE", dataSource);
 
             try (InputStream stream = getClass().getResourceAsStream((REPORTS_PATH + reportName))) {
-                return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
+                return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, dataSource));
             } catch (JRException | IOException e) {
                 throw new RuntimeException(e);
             }
         }), "");
         anchor.getElement().setAttribute("download", true);
         anchor.add(prepareInvoiceButton);
-
 
         Hr line1 = new Hr();
         Hr line2 = new Hr();
@@ -1144,7 +1136,7 @@ public class ShowShipmentView extends VerticalLayout {
         horizontalLayout.add(inWords);
         FormLayout invoiceForm = new FormLayout();
         invoiceForm.add(foreignCurrComboBox, localCurrencyComboBox, conversionRate, expNo, expDate, gap0, line1, gap0,
-                foreignCurrency, description, rate, quantity, itemTotalInLocalCurr, createDetailsButton,
+                description, rate, quantity, itemUnit, itemTotalInLocalCurr, invoiceItemSubLayout,
                 invoiceItemGrid,
                 horizontalLayout, gap5, total);
 
@@ -1159,7 +1151,7 @@ public class ShowShipmentView extends VerticalLayout {
         invoiceForm.setColspan(gap4, 3);
         invoiceForm.setColspan(gap5, 2);
         invoiceForm.setColspan(horizontalLayout, 2);
-        invoiceForm.setColspan(invoiceItemGrid, 5);
+        invoiceForm.setColspan(invoiceItemGrid, 6);
 
         FormLayout contactForm = new FormLayout();
         contactForm.add(bankDetailsComboBox, contactDetailsComboBox);
@@ -1175,6 +1167,70 @@ public class ShowShipmentView extends VerticalLayout {
         dialog.getFooter().add(anchor);
 
         return dialog;
+    }
+
+    private Map<String, Object> getInvoiceReportParam(Shipment shipment) {
+
+        final Map<String, Object> parameters = new HashMap<>();
+
+        Invoice invoice = shipment.getInvoice();
+
+        parameters.put("LOGO_URL", Util.imagePath);
+
+        parameters.put("INVOICE_NO", invoice.getInvoiceNo());
+        parameters.put("INVOICE_DATE", getFormattedDate(LocalDate.now()));
+
+        parameters.put("SHIPPER_NAME", shipment.getShipper().getName());
+        parameters.put("BL_NO", shipment.getBlNo());
+
+        parameters.put("ADDRESS", shipment.getShipper().getAddress());
+        parameters.put("VESSEL", shipment.getSchedule().getFeederVesselName());
+
+        parameters.put("SHIPPER_EMAIL", shipment.getShipper().getEmail());
+        parameters.put("POL_ETD", getFormattedDate(shipment.getSchedule().getLoadingPortEta()));
+
+        parameters.put("COMMODITY", shipment.getCommodity().getName());
+        parameters.put("DEST_ETA", getFormattedDate(shipment.getSchedule().getDestinationPortEta()));
+
+        parameters.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortName() + ", "
+                + shipment.getSchedule().getPortOfLoading().getPortCountry());
+        parameters.put("DEST_PORT", shipment.getSchedule().getPortOfDestination().getPortName() + ", "
+                + shipment.getSchedule().getPortOfDestination().getPortCountry());
+
+        int numOfContainers = shipment.getBooking().getNumOfContainers();
+        if (numOfContainers > 10) {
+            parameters.put("CONTAINERS", numOfContainers + "x" +
+                    shipment.getBooking().getContainerSize().getContainerSize());
+        } else {
+            parameters.put("CONTAINERS", getContainers(shipment.getBooking()));
+        }
+        parameters.put("SHIPPER_INV_NO", shipment.getInvoiceNo());
+
+        parameters.put("EXP_NO", invoice.getExpNo());
+        parameters.put("EXP_DATE", getFormattedDate(invoice.getExpDate()));
+
+        parameters.put("FOREIGN_CURRENCY", invoice.getForeignCurrency().toString());
+        parameters.put("LOCAL_CURRENCY", invoice.getLocalCurrency().toString());
+        parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(invoice.getConversionRate().setScale(2, RoundingMode.UNNECESSARY)));
+
+        BigDecimal grandTotal = invoice.getInvoiceItems().stream().map(InvoiceItem::getTotalInLocalCurr).reduce(BigDecimal.ZERO, BigDecimal::add);
+        parameters.put("TOTAL", Util.getFormattedBigDecimal(grandTotal.setScale(2,RoundingMode.UNNECESSARY)));
+        parameters.put("TOTAL_IN_WORD",
+                addPrefixSuffixToWordAmountByCurrency(invoice.getLocalCurrency(), Util.getAmountInWords(grandTotal)));
+
+        BankDetails bankDetails = invoice.getBankDetails();
+        parameters.put("BANK_NAME", bankDetails.getBankName());
+        parameters.put("AC_NAME", bankDetails.getAccName());
+        parameters.put("AC_NO", bankDetails.getAccNo());
+        parameters.put("ROUTING_NO", bankDetails.getRoutingNo());
+        parameters.put("BRANCH", bankDetails.getBranchName());
+
+        ContactDetails contactDetails = invoice.getContactDetails();
+        parameters.put("SIGNED_BY", contactDetails.getName());
+        parameters.put("SIGNED_BY_EMAIL", contactDetails.getEmail());
+        parameters.put("SIGNED_BY_CONTACT", contactDetails.getContactNo());
+
+        return parameters;
     }
 
     private String getTotalColumnName(AmountCurrency currency) {

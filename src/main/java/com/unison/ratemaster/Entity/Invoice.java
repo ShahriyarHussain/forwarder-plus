@@ -19,11 +19,11 @@ public class Invoice {
     private String expNo;
     private LocalDate expDate;
     private BigDecimal conversionRate;
-    private BigDecimal subTotal;
-    private AmountCurrency freightCurrency;
+    private BigDecimal grandTotal;
+    private AmountCurrency foreignCurrency;
     private AmountCurrency localCurrency;
     @OneToMany(fetch = FetchType.EAGER)
-    private Set<FreightDetails> freightDetails;
+    private Set<InvoiceItem> invoiceItems;
     @OneToOne
     private BankDetails bankDetails;
     @OneToOne
