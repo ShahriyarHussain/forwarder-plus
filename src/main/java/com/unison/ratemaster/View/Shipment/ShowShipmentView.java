@@ -1,7 +1,9 @@
 package com.unison.ratemaster.View.Shipment;
 
+import com.unison.ratemaster.Dto.InvoiceItemDto;
 import com.unison.ratemaster.Entity.*;
 import com.unison.ratemaster.Enum.*;
+import com.unison.ratemaster.Repository.InvoiceItemsService;
 import com.unison.ratemaster.Service.*;
 import com.unison.ratemaster.Util.ShipmentFilter;
 import com.unison.ratemaster.Util.Util;
@@ -11,6 +13,7 @@ import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -34,9 +37,11 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
+import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperRunManager;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 
 import javax.annotation.security.PermitAll;
 import java.io.ByteArrayInputStream;
@@ -49,6 +54,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 @PageTitle("View Shipments")
@@ -68,14 +74,15 @@ public class ShowShipmentView extends VerticalLayout {
     private final CarrierService carrierService;
     private final BankDetailsService bankDetailsService;
     private final ContactDetailsService contactDetailsService;
+    private final InvoiceItemsService invoiceItemsService;
 
     private byte[] masterBl;
     private final Grid<Shipment> grid;
 
     public ShowShipmentView(ShipmentService shipmentService, ClientService clientService, ScheduleService scheduleService,
-                            PortService portService,BookingService bookingService, CommodityService commodityService,
+                            PortService portService, BookingService bookingService, CommodityService commodityService,
                             InvoiceService invoiceService, CarrierService carrierService, BankDetailsService bankDetailsService,
-                            ContactDetailsService contactDetailsService) {
+                            ContactDetailsService contactDetailsService, InvoiceItemsService invoiceItemsService) {
 
         this.shipmentService = shipmentService;
         this.clientService = clientService;
@@ -87,6 +94,7 @@ public class ShowShipmentView extends VerticalLayout {
         this.carrierService = carrierService;
         this.bankDetailsService = bankDetailsService;
         this.contactDetailsService = contactDetailsService;
+        this.invoiceItemsService = invoiceItemsService;
 
 
         H2 title = new H2("View Shipment");
@@ -714,6 +722,13 @@ public class ShowShipmentView extends VerticalLayout {
         Button saveButton = new Button("Save Booking");
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         saveButton.addClickListener(event -> {
+            if (containerList.size() != booking.getNumOfContainers()) {
+                new ConfirmDialog("Data Mismatch!",
+                        "Number of Containers Does Not Match With Entered Containers." + System.lineSeparator() +
+                                "Entered Containers: " + containerList.size() + ", " + " Number of Containers = " + booking.getNumOfContainers(),
+                        "Go Back", e -> getChildren().close()).open();
+                return;
+            }
             booking.setBookingNo(bookingNo.getValue());
             booking.setContainerType(containerType.getValue());
             booking.setInvoiceNo(invoiceNo.getValue());
@@ -897,6 +912,7 @@ public class ShowShipmentView extends VerticalLayout {
     public Dialog createInvoiceMakerDialog(Shipment shipment) {
 
         Invoice invoice = shipment.getInvoice();
+        Set<InvoiceItem> invoiceItems = invoice.getInvoiceItems();
 
         Dialog dialog = new Dialog();
         HorizontalLayout horizontalLayout = new HorizontalLayout();
@@ -916,10 +932,10 @@ public class ShowShipmentView extends VerticalLayout {
         DatePicker expDate = new DatePicker("Exp Date");
         expDate.setValue(invoice.getExpDate());
 
-        ComboBox<AmountCurrency> freightCurrencyComboBox = new ComboBox<>("Carrier Currency");
-        freightCurrencyComboBox.setItems(AmountCurrency.values());
-        freightCurrencyComboBox.setItemLabelGenerator(curr -> curr.toString() + " - " + curr.getCurrencyName());
-        freightCurrencyComboBox.setValue(invoice.getFreightCurrency());
+        ComboBox<AmountCurrency> foreignCurrComboBox = new ComboBox<>("Carrier Currency");
+        foreignCurrComboBox.setItems(AmountCurrency.values());
+        foreignCurrComboBox.setItemLabelGenerator(curr -> curr.toString() + " - " + curr.getCurrencyName());
+        foreignCurrComboBox.setValue(invoice.getForeignCurrency());
 
         ComboBox<AmountCurrency> localCurrencyComboBox = new ComboBox<>("Local Currency");
         localCurrencyComboBox.setItems(AmountCurrency.values());
@@ -927,57 +943,78 @@ public class ShowShipmentView extends VerticalLayout {
         localCurrencyComboBox.setValue(invoice.getLocalCurrency());
 
         Text inWords = new Text("Zero");
-        inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(invoice.getSubTotal())));
+        inWords.setText(addSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+                Util.getAmountInWords(invoice.getGrandTotal())));
 
         BigDecimalField total = new BigDecimalField("Total", BigDecimal.ZERO, "");
-        total.setValue(invoice.getSubTotal() == null ? BigDecimal.ZERO : invoice.getSubTotal());
+        total.setValue(invoice.getGrandTotal() == null ? BigDecimal.ZERO : invoice.getGrandTotal());
         total.setReadOnly(true);
 
-        BigDecimalField freightInBDT = new BigDecimalField("Freight in BDT", "");
-        freightInBDT.setValue(invoice.getFreightTotalInLocalCurr() == null ? BigDecimal.ZERO : invoice.getFreightTotalInLocalCurr());
-        freightInBDT.setReadOnly(true);
-
-        BigDecimalField totalFreight = new BigDecimalField("Total Freight", "");
-        totalFreight.setValue(invoice.getTotalFreight() == null ? BigDecimal.ZERO : invoice.getTotalFreight());
-        totalFreight.setReadOnly(true);
-
-        BigDecimalField ratePerContField = new BigDecimalField("Rate Per Container", "");
-        ratePerContField.setValue(invoice.getRatePerContainer() == null ? BigDecimal.ZERO : invoice.getRatePerContainer());
-        ratePerContField.setValueChangeMode(ValueChangeMode.EAGER);
-
         BigDecimalField conversionRate = new BigDecimalField("Conversion Rate", "");
-        conversionRate.setValue(invoice.getConversionRate() == null ? BigDecimal.ZERO : invoice.getConversionRate());
+        conversionRate.setValue(invoice.getConversionRate() == null ? BigDecimal.ONE : invoice.getConversionRate());
 
-        TextField goodDescription = new TextField("Goods Description");
-        goodDescription.setValue(Objects.requireNonNullElse(invoice.getGoodsDescription(), ""));
+        TextField description = new TextField("Description");
+        BigDecimalField rate = new BigDecimalField("Rate Per Product");
+        IntegerField quantity = new IntegerField("Quantity");
+        TextField itemUnit = new TextField("Unit");
+        BigDecimalField itemTotalInLocalCurr = new BigDecimalField("Sub Total");
+        Checkbox foreignCurrency = new Checkbox("Foreign Currency ?");
 
-        TextField otherField1 = new TextField("Other Cost Name 1:");
-        otherField1.setValue(Objects.requireNonNullElse(invoice.getOtherDesc1(), ""));
+        rate.setValueChangeMode(ValueChangeMode.ON_BLUR);
+        conversionRate.setValueChangeMode(ValueChangeMode.ON_BLUR);
+        quantity.setValueChangeMode(ValueChangeMode.EAGER);
 
-        BigDecimalField otherCost1Amt = new BigDecimalField("Other Cost 1 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost1Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost1Amt.setValue(invoice.getOther1Amt() == null ? BigDecimal.ZERO : invoice.getOther1Amt());
+        rate.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue()))
+        );
+        quantity.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue()))
+        );
+        foreignCurrency.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue()))
+        );
+        conversionRate.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                        calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue())));
 
-        TextField otherField2 = new TextField("Other Cost Name 2:");
-        otherField2.setValue(Objects.requireNonNullElse(invoice.getOtherDesc2(), ""));
 
-        BigDecimalField otherCost2Amt = new BigDecimalField("Other Cost 2 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost2Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost2Amt.setValue(invoice.getOther2Amt() == null ? BigDecimal.ZERO : invoice.getOther2Amt());
+        Grid<InvoiceItem> invoiceItemGrid = new Grid<>();
 
-        TextField otherField3 = new TextField("Other Cost Name 3:");
-        otherField3.setValue(Objects.requireNonNullElse(invoice.getOtherDesc3(), ""));
+        invoiceItemGrid.setItems(invoiceItems);
+        invoiceItemGrid.addColumn(InvoiceItem::getDescription).setHeader("Description");
+        invoiceItemGrid.addColumn(InvoiceItem::getRate).setHeader("Rate");
+        invoiceItemGrid.addColumn(InvoiceItem::getQuantity).setHeader("Quantity");
+        invoiceItemGrid.addColumn(InvoiceItem::getItemUnit).setHeader("Unit");
+        Grid.Column<InvoiceItem> foreignCurrTotal = invoiceItemGrid.addColumn(InvoiceItem::getTotalInForeignCurr)
+                .setHeader(getTotalColumnName(foreignCurrComboBox.getValue()));
+        Grid.Column<InvoiceItem> localCurrTotal = invoiceItemGrid.addColumn(InvoiceItem::getTotalInLocalCurr)
+                .setHeader(getTotalColumnName(localCurrencyComboBox.getValue()));
+        invoiceItemGrid.addComponentColumn(invoiceItem -> {
+            Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
+            deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            deleteButton.addClickListener(event -> {
+                invoiceItems.remove(invoiceItem);
+                invoiceItemGrid.setVisible(!invoiceItems.isEmpty());
+                invoiceItemGrid.setItems(invoiceItems);
+                total.setValue(invoiceItems.stream()
+                        .map(InvoiceItem::getTotalInLocalCurr)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add));
+                inWords.setText(addSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+                        Util.getAmountInWords(total.getValue())));
+            });
+            return deleteButton;
+        });
+        invoiceItemGrid.setMaxHeight(17, Unit.EM);
+        invoiceItemGrid.setVisible(!invoiceItems.isEmpty());
+        invoiceItemGrid.setItems(invoiceItems);
 
-        BigDecimalField otherCost3Amt = new BigDecimalField("Other Cost 3 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost3Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost3Amt.setValue(invoice.getOther3Amt() == null ? BigDecimal.ZERO : invoice.getOther3Amt());
-
-        TextField otherField4 = new TextField("Other Cost Name 4:");
-        otherField4.setValue(Objects.requireNonNullElse(invoice.getOtherDesc4(), ""));
-
-        BigDecimalField otherCost4Amt = new BigDecimalField("Other Cost 4 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost4Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost4Amt.setValue(invoice.getOther4Amt() == null ? BigDecimal.ZERO : invoice.getOther4Amt());
+        foreignCurrComboBox.addValueChangeListener(event -> {
+            foreignCurrTotal.setHeader(getTotalColumnName(event.getValue()));
+            conversionRate.setValue(BigDecimal.ONE);
+        });
+        localCurrencyComboBox.addValueChangeListener(event -> {
+            localCurrTotal.setHeader(getTotalColumnName(event.getValue()));
+            conversionRate.setValue(BigDecimal.ONE);
+        });
 
         ComboBox<BankDetails> bankDetailsComboBox = new ComboBox<>("Choose Bank Details");
         bankDetailsComboBox.setItems(bankDetailsService.getAllBankDetails());
@@ -990,161 +1027,97 @@ public class ShowShipmentView extends VerticalLayout {
         contactDetailsComboBox.setItemLabelGenerator(ContactDetails::getName);
         contactDetailsComboBox.setValue(invoice.getContactDetails());
 
-        otherCost1Amt.addValueChangeListener(e -> {
-                    if (otherCost1Amt.getValue() == null) {
-                        otherCost1Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
-                }
-        );
-        otherCost2Amt.addValueChangeListener(e -> {
-                    if (otherCost2Amt.getValue() == null) {
-                        otherCost2Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
-                }
-        );
-        otherCost3Amt.addValueChangeListener(e -> {
-                    if (otherCost3Amt.getValue() == null) {
-                        otherCost3Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
-                }
-        );
-        otherCost4Amt.addValueChangeListener(e -> {
-                    if (otherCost4Amt.getValue() == null) {
-                        otherCost4Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
-                }
-        );
-        ratePerContField.addValueChangeListener(e -> {
-                    totalFreight.setValue(e.getValue()
-                            .multiply(BigDecimal.valueOf(numOfContainer.getValue())));
-                    freightInBDT.setValue(totalFreight.getValue().multiply(conversionRate.getValue()));
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue())
-                            .add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue()));
-                    inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(), Util.getAmountInWords(total.getValue())));
-                }
-        );
 
         Button saveInvoiceButton = new Button("Save Invoice", new Icon(VaadinIcon.DATABASE));
         saveInvoiceButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         saveInvoiceButton.addClickListener(event -> {
-            invoice.setFreightTotalInLocalCurr(freightInBDT.getValue());
-            invoice.setSubTotal(total.getValue());
+            invoice.setGrandTotal(total.getValue());
             invoice.setExpNo(expNo.getValue());
             invoice.setExpDate(expDate.getValue());
-            invoice.setRatePerContainer(ratePerContField.getValue());
-            invoice.setTotalFreight(totalFreight.getValue());
             invoice.setConversionRate(conversionRate.getValue());
-            invoice.setFreightCurrency(freightCurrencyComboBox.getValue());
+            invoice.setForeignCurrency(foreignCurrComboBox.getValue());
             invoice.setLocalCurrency(localCurrencyComboBox.getValue());
-            invoice.setGoodsDescription(goodDescription.getValue());
-
-            invoice.setOtherDesc1(otherField1.getValue());
-            invoice.setOther1Amt(otherCost1Amt.getValue());
-            invoice.setOtherDesc2(otherField2.getValue());
-            invoice.setOther2Amt(otherCost2Amt.getValue());
-            invoice.setOtherDesc3(otherField3.getValue());
-            invoice.setOther3Amt(otherCost3Amt.getValue());
-            invoice.setOtherDesc4(otherField4.getValue());
-            invoice.setOther4Amt(otherCost4Amt.getValue());
-
             invoice.setBankDetails(bankDetailsComboBox.getValue());
             invoice.setContactDetails(contactDetailsComboBox.getValue());
-            invoiceService.saveInvoice(invoice);
-            Util.getNotificationForSuccess("Saved Successfully").open();
+
+            try {
+                invoice.setInvoiceItems(invoiceItems);
+                invoiceItemsService.saveInvoiceItems(invoiceItems);
+                invoiceService.saveInvoice(invoice);
+                Util.getNotificationForSuccess("Saved Successfully").open();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Util.getNotificationForError("Error!").open();
+            }
+
         });
+
+        Button createDetailsButton = new Button("Add", new Icon(VaadinIcon.PLUS));
+        createDetailsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        createDetailsButton.addClickListener(event -> {
+            try {
+                InvoiceItem invoiceItem = new InvoiceItem();
+                invoiceItem.setInvoice(invoice);
+                invoiceItem.setRate(rate.getValue());
+                invoiceItem.setQuantity(quantity.getValue());
+                invoiceItem.setDescription(description.getValue());
+                invoiceItem.setItemUnit(itemUnit.getValue());
+                invoiceItem.setForeignCurr(foreignCurrency.getValue());
+
+                invoiceItem.setCurrency(foreignCurrency.getValue() ?
+                        foreignCurrComboBox.getValue().toString() : localCurrencyComboBox.getValue().toString());
+                invoiceItem.setTotalInForeignCurr(
+                        calculateItemTotal(rate.getValue(), quantity.getValue(),false, BigDecimal.ONE));
+
+                invoiceItem.setTotalInLocalCurr(itemTotalInLocalCurr.getValue());
+
+                invoiceItems.add(invoiceItem);
+                invoiceItemGrid.setItems(invoiceItems);
+                invoiceItemGrid.setVisible(true);
+                total.setValue(invoiceItems.stream()
+                        .map(InvoiceItem::getTotalInLocalCurr)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add));
+                inWords.setText(addSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+                        Util.getAmountInWords(total.getValue())));
+            } catch (Exception e) {
+                Util.getNotificationForError("Error Occurred").open();
+                e.printStackTrace();
+            }
+        });
+
+        HorizontalLayout invoiceItemSubLayout = new HorizontalLayout();
+        invoiceItemSubLayout.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        invoiceItemSubLayout.add(foreignCurrency, createDetailsButton);
 
         Button prepareInvoiceButton = new Button("Download Invoice", new Icon(VaadinIcon.DOWNLOAD));
         prepareInvoiceButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        Anchor anchor = new Anchor(new StreamResource("Invoice" + shipment.getBlNo() + ".pdf", (InputStreamFactory) () -> {
-            final Map<String, Object> parameters = new HashMap<>();
+        Anchor anchor = new Anchor(new StreamResource("Invoice-" + shipment.getBlNo() + ".pdf", (InputStreamFactory) () -> {
 
-            String reportName = "Invoice.jasper";
+            List<InvoiceItemDto> invoiceItemDtos = new LinkedList<>();
+            invoiceItemDtos.add(new InvoiceItemDto()); // প্রথম খালি ভ্যালুটি MASTER_REPORT এর জন্য
+            invoiceItemDtos.addAll(invoice.getInvoiceItems().stream()
+                    .sorted(Comparator.comparing(InvoiceItem::getTotalInLocalCurr).reversed())
+                    .map(InvoiceItemDto::new)
+                    .collect(Collectors.toList()));
 
-            parameters.put("BL_NO", shipment.getBlNo());
-            parameters.put("ADDRESS", shipment.getShipper().getAddress());
-            parameters.put("INVOICE_NO", shipment.getInvoice().getInvoiceNo());
-            parameters.put("SHIPPER_NAME", shipment.getShipper().getName());
-            parameters.put("CONTAINER", numOfContainer.getValue() + "x" + shipment.getBooking().getContainerSize().getContainerSize());
-            parameters.put("COMMODITY", shipment.getCommodity().getName());
-            parameters.put("CONTAINERS", getContainers(shipment.getBooking()));
-            parameters.put("INVOICE_DATE", getFormattedDate(LocalDate.now()));
-            parameters.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortName() + ", "
-                    + shipment.getSchedule().getPortOfLoading().getPortCountry());
-            parameters.put("DEST_PORT", shipment.getSchedule().getPortOfDestination().getPortName() + ", "
-                    + shipment.getSchedule().getPortOfDestination().getPortCountry());
-            parameters.put("POL_ETD", getFormattedDate(shipment.getSchedule().getLoadingPortEta()));
-            parameters.put("DEST_ETA", getFormattedDate(shipment.getSchedule().getDestinationPortEta()));
-            parameters.put("SHIPPER_EMAIL", shipment.getShipper().getEmail());
-            parameters.put("LOGO_URL", Util.imagePath);
-            parameters.put("SHIPPER_INV_NO", shipment.getInvoiceNo());
-            parameters.put("FREIGHT_CURRENCY", freightCurrencyComboBox.getValue().toString());
-
-            parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(conversionRate.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("FREIGHT_RATE", Util.getFormattedBigDecimal(ratePerContField.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("TOTAL_FREIGHT", Util.getFormattedBigDecimal(totalFreight.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("FREIGHT_LOCAL", Util.getFormattedBigDecimal(freightInBDT.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("GOODS_DESCRIPTION", goodDescription.getValue());
-            parameters.put("DESC_2", otherField1.getValue());
-            parameters.put("DESC_2_AMT", Util.getFormattedBigDecimal(otherCost1Amt.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("DESC_3", otherField2.getValue());
-            parameters.put("DESC_3_AMT", Util.getFormattedBigDecimal(otherCost2Amt.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-
-            if (otherField3.getValue() != null && !otherField3.getValue().isEmpty()) {
-                reportName = "Invoice_row_3.jasper";
-                parameters.put("DESC_4", otherField3.getValue());
-                parameters.put("DESC_4_AMT", Util.getFormattedBigDecimal(otherCost3Amt.getValue()
-                        .setScale(2, RoundingMode.UNNECESSARY)));
-            }
-            if (otherField4.getValue() != null && !otherField4.getValue().isEmpty()) {
-                reportName = "Invoice_row_4.jasper";
-                parameters.put("DESC_5", otherField4.getValue());
-                parameters.put("DESC_5_AMT", Util.getFormattedBigDecimal(otherCost4Amt.getValue()
-                        .setScale(2, RoundingMode.UNNECESSARY)));
+            for (int i = 0; i < invoiceItemDtos.size(); i++) {
+                invoiceItemDtos.get(i).setSlNo(i);
             }
 
-            parameters.put("TOTAL", Util.getFormattedBigDecimal(total.getValue().setScale(2,
-                    RoundingMode.UNNECESSARY)));
-            parameters.put("TOTAL_IN_WORD", inWords.getText());
-            parameters.put("BANK_NAME", bankDetailsComboBox.getValue().getBankName());
-            parameters.put("AC_NAME", bankDetailsComboBox.getValue().getAccName());
-            parameters.put("AC_NO", bankDetailsComboBox.getValue().getAccNo());
-            parameters.put("ROUTING_NO", bankDetailsComboBox.getValue().getRoutingNo());
-            parameters.put("BRANCH", bankDetailsComboBox.getValue().getBranchName());
-            parameters.put("SIGNED_BY", contactDetailsComboBox.getValue().getName());
-            parameters.put("SIGNED_BY_EMAIL", contactDetailsComboBox.getValue().getEmail());
-            parameters.put("SIGNED_BY_CONTACT", contactDetailsComboBox.getValue().getContactNo());
-            parameters.put("EXP_NO", expNo.getValue());
-            parameters.put("EXP_DATE", getFormattedDate(expDate.getValue()));
-            parameters.put("VESSEL", shipment.getSchedule().getFeederVesselName());
+            String reportName = "invoice.jasper";
 
+            final Map<String, Object> parameters = getInvoiceReportParam(shipment);
+            JRDataSource dataSource = new JRBeanCollectionDataSource(invoiceItemDtos);
+            parameters.put("COLLECTION_LIST", dataSource);
 
             try (InputStream stream = getClass().getResourceAsStream((REPORTS_PATH + reportName))) {
-                return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
+                return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, dataSource));
             } catch (JRException | IOException e) {
                 throw new RuntimeException(e);
             }
         }), "");
         anchor.getElement().setAttribute("download", true);
         anchor.add(prepareInvoiceButton);
-
 
         Hr line1 = new Hr();
         Hr line2 = new Hr();
@@ -1164,12 +1137,12 @@ public class ShowShipmentView extends VerticalLayout {
 
         horizontalLayout.add(inWords);
         FormLayout invoiceForm = new FormLayout();
-        invoiceForm.add(freightCurrencyComboBox, localCurrencyComboBox, conversionRate, expNo, expDate, gap0, line1, goodDescription, numOfContainer,
-                ratePerContField, totalFreight, freightInBDT, otherField1, gap1, otherCost1Amt, otherField2, gap2,
-                otherCost2Amt, otherField3, gap3, otherCost3Amt, otherField4, gap4, otherCost4Amt, line3,
+        invoiceForm.add(foreignCurrComboBox, localCurrencyComboBox, conversionRate, expNo, expDate, gap0, line1, gap0,
+                description, rate, quantity, itemUnit, itemTotalInLocalCurr, invoiceItemSubLayout,
+                invoiceItemGrid,
                 horizontalLayout, gap5, total);
 
-        invoiceForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 5));
+        invoiceForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 6));
         //invoiceForm.setColspan(gap0, 1);
         invoiceForm.setColspan(line1, 5);
         invoiceForm.setColspan(line2, 5);
@@ -1180,6 +1153,7 @@ public class ShowShipmentView extends VerticalLayout {
         invoiceForm.setColspan(gap4, 3);
         invoiceForm.setColspan(gap5, 2);
         invoiceForm.setColspan(horizontalLayout, 2);
+        invoiceForm.setColspan(invoiceItemGrid, 6);
 
         FormLayout contactForm = new FormLayout();
         contactForm.add(bankDetailsComboBox, contactDetailsComboBox);
@@ -1197,11 +1171,91 @@ public class ShowShipmentView extends VerticalLayout {
         return dialog;
     }
 
-    private String addPrefixSuffixToWordAmountByCurrency(AmountCurrency currency, String amount) {
+    private Map<String, Object> getInvoiceReportParam(Shipment shipment) {
+
+        final Map<String, Object> parameters = new HashMap<>();
+
+        Invoice invoice = shipment.getInvoice();
+
+        parameters.put("LOGO_URL", Util.imagePath);
+
+        parameters.put("INVOICE_NO", invoice.getInvoiceNo());
+        parameters.put("INVOICE_DATE", getFormattedDate(LocalDate.now()));
+
+        parameters.put("SHIPPER_NAME", shipment.getShipper().getName());
+        parameters.put("BL_NO", shipment.getBlNo());
+
+        parameters.put("ADDRESS", shipment.getShipper().getAddress());
+        parameters.put("VESSEL", shipment.getSchedule().getFeederVesselName());
+
+        parameters.put("SHIPPER_EMAIL", shipment.getShipper().getEmail());
+        parameters.put("POL_ETD", getFormattedDate(shipment.getSchedule().getLoadingPortEta()));
+
+        parameters.put("COMMODITY", shipment.getCommodity().getName());
+        parameters.put("DEST_ETA", getFormattedDate(shipment.getSchedule().getDestinationPortEta()));
+
+        parameters.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortName() + ", "
+                + shipment.getSchedule().getPortOfLoading().getPortCountry());
+        parameters.put("DEST_PORT", shipment.getSchedule().getPortOfDestination().getPortName() + ", "
+                + shipment.getSchedule().getPortOfDestination().getPortCountry());
+
+        int numOfContainers = shipment.getBooking().getNumOfContainers();
+        if (numOfContainers > 10) {
+            parameters.put("CONTAINERS", numOfContainers + "x" +
+                    shipment.getBooking().getContainerSize().getContainerSize());
+        } else {
+            parameters.put("CONTAINERS", getContainers(shipment.getBooking()));
+        }
+        parameters.put("SHIPPER_INV_NO", shipment.getInvoiceNo());
+
+        parameters.put("EXP_NO", invoice.getExpNo());
+        parameters.put("EXP_DATE", getFormattedDate(invoice.getExpDate()));
+
+        parameters.put("FOREIGN_CURRENCY", invoice.getForeignCurrency().toString());
+        parameters.put("LOCAL_CURRENCY", invoice.getLocalCurrency().toString());
+        parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(invoice.getConversionRate().setScale(2, RoundingMode.UNNECESSARY)));
+
+        BigDecimal grandTotal = invoice.getInvoiceItems().stream().map(InvoiceItem::getTotalInLocalCurr).reduce(BigDecimal.ZERO, BigDecimal::add);
+        parameters.put("GRAND_TOTAL", Util.getFormattedBigDecimal(grandTotal.setScale(1,RoundingMode.UNNECESSARY)));
+        parameters.put("TOTAL_IN_WORD",
+                addSuffixToWordAmountByCurrency(invoice.getLocalCurrency(), Util.getAmountInWords(grandTotal)));
+
+        BankDetails bankDetails = invoice.getBankDetails();
+        parameters.put("BANK_NAME", bankDetails.getBankName());
+        parameters.put("AC_NAME", bankDetails.getAccName());
+        parameters.put("AC_NO", bankDetails.getAccNo());
+        parameters.put("ROUTING_NO", bankDetails.getRoutingNo());
+        parameters.put("BRANCH", bankDetails.getBranchName());
+
+        ContactDetails contactDetails = invoice.getContactDetails();
+        parameters.put("SIGNED_BY", contactDetails.getName());
+        parameters.put("SIGNED_BY_EMAIL", contactDetails.getEmail());
+        parameters.put("SIGNED_BY_CONTACT", contactDetails.getContactNo());
+
+        return parameters;
+    }
+
+    private String getTotalColumnName(AmountCurrency currency) {
+        if (currency == null) {
+            return "Total";
+        }
+        return "Total in " + currency;
+    }
+
+    private BigDecimal calculateItemTotal(BigDecimal rate, Integer quantity, Boolean isForeignCurr, BigDecimal convRate) {
+        if (rate == null || quantity == null || convRate == null) {
+            System.out.println("NULL FOUND IN CALCULATION");
+            return BigDecimal.ZERO;
+        }
+        BigDecimal conversionRate = isForeignCurr ? convRate : BigDecimal.ONE;
+        return rate.multiply(new BigDecimal(quantity)).multiply(conversionRate);
+    }
+
+    private String addSuffixToWordAmountByCurrency(AmountCurrency currency, String amount) {
         if (currency == null) {
             currency = AmountCurrency.BDT;
         }
-        return "In words: " + amount  + currency.getCurrencyName() + " Only";
+        return amount + " " + currency.getCurrencyName() + " Only";
     }
 
     private static Button getConfirmDialogButton(Dialog dialog) {
