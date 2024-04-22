@@ -18,7 +18,8 @@ public class InvoiceItem {
     private String description;
     private long quantity;
     private String itemUnit;
-    private String foreignCurrency;
+    private String currency;
+    private boolean isForeignCurr;
     private BigDecimal rate;
     private BigDecimal totalInForeignCurr;
     private BigDecimal totalInLocalCurr;

@@ -20,8 +20,12 @@ public class InvoiceItemDto {
     public InvoiceItemDto(InvoiceItem item) {
         this.description = item.getDescription();
         this.quantityWithUnit = item.getQuantity() + " " + item.getItemUnit();
-        this.rate =  item.getForeignCurrency() + " " + Util.getFormattedBigDecimal(item.getRate());
-        this.totalInForeignCurr = item.getForeignCurrency() + " " + Util.getFormattedBigDecimal(item.getTotalInForeignCurr());
+        this.rate =  item.getCurrency() + " " + Util.getFormattedBigDecimal(item.getRate());
+        if (item.isForeignCurr()) {
+            this.totalInForeignCurr = item.getCurrency() + " " + Util.getFormattedBigDecimal(item.getTotalInForeignCurr());
+        } else {
+            this.totalInForeignCurr = null;
+        }
         this.subtotal = item.getInvoice().getLocalCurrency().toString() + " " +
                 Util.getFormattedBigDecimal(item.getTotalInLocalCurr());
     }

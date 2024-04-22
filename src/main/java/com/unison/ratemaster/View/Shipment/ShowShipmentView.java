@@ -37,6 +37,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
+import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperRunManager;
@@ -942,7 +943,7 @@ public class ShowShipmentView extends VerticalLayout {
         localCurrencyComboBox.setValue(invoice.getLocalCurrency());
 
         Text inWords = new Text("Zero");
-        inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+        inWords.setText(addSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
                 Util.getAmountInWords(invoice.getGrandTotal())));
 
         BigDecimalField total = new BigDecimalField("Total", BigDecimal.ZERO, "");
@@ -997,12 +998,12 @@ public class ShowShipmentView extends VerticalLayout {
                 total.setValue(invoiceItems.stream()
                         .map(InvoiceItem::getTotalInLocalCurr)
                         .reduce(BigDecimal.ZERO, BigDecimal::add));
-                inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+                inWords.setText(addSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
                         Util.getAmountInWords(total.getValue())));
             });
             return deleteButton;
         });
-        invoiceItemGrid.setMaxHeight(15, Unit.EM);
+        invoiceItemGrid.setMaxHeight(17, Unit.EM);
         invoiceItemGrid.setVisible(!invoiceItems.isEmpty());
         invoiceItemGrid.setItems(invoiceItems);
 
@@ -1061,8 +1062,9 @@ public class ShowShipmentView extends VerticalLayout {
                 invoiceItem.setQuantity(quantity.getValue());
                 invoiceItem.setDescription(description.getValue());
                 invoiceItem.setItemUnit(itemUnit.getValue());
+                invoiceItem.setForeignCurr(foreignCurrency.getValue());
 
-                invoiceItem.setForeignCurrency(foreignCurrency.getValue() ?
+                invoiceItem.setCurrency(foreignCurrency.getValue() ?
                         foreignCurrComboBox.getValue().toString() : localCurrencyComboBox.getValue().toString());
                 invoiceItem.setTotalInForeignCurr(
                         calculateItemTotal(rate.getValue(), quantity.getValue(),false, BigDecimal.ONE));
@@ -1075,7 +1077,7 @@ public class ShowShipmentView extends VerticalLayout {
                 total.setValue(invoiceItems.stream()
                         .map(InvoiceItem::getTotalInLocalCurr)
                         .reduce(BigDecimal.ZERO, BigDecimal::add));
-                inWords.setText(addPrefixSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+                inWords.setText(addSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
                         Util.getAmountInWords(total.getValue())));
             } catch (Exception e) {
                 Util.getNotificationForError("Error Occurred").open();
@@ -1091,22 +1093,22 @@ public class ShowShipmentView extends VerticalLayout {
         prepareInvoiceButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         Anchor anchor = new Anchor(new StreamResource("Invoice-" + shipment.getBlNo() + ".pdf", (InputStreamFactory) () -> {
 
-            List<InvoiceItemDto> invoiceItemDtos = invoice.getInvoiceItems().stream()
+            List<InvoiceItemDto> invoiceItemDtos = new LinkedList<>();
+            invoiceItemDtos.add(new InvoiceItemDto()); // প্রথম খালি ভ্যালুটি MASTER_REPORT এর জন্য
+            invoiceItemDtos.addAll(invoice.getInvoiceItems().stream()
+                    .sorted(Comparator.comparing(InvoiceItem::getTotalInLocalCurr).reversed())
                     .map(InvoiceItemDto::new)
-                    .sorted(Comparator.comparing(InvoiceItemDto::getSubtotal))
-                    .collect(Collectors.toList());
-            for (int i = 0, count = 1; i < invoiceItemDtos.size(); i++) {
-                invoiceItemDtos.get(i).setSlNo(count++);
+                    .collect(Collectors.toList()));
+
+            for (int i = 0; i < invoiceItemDtos.size(); i++) {
+                invoiceItemDtos.get(i).setSlNo(i);
             }
 
-            System.out.println("slNo -  description - quantityWithUnit  -  rate  -  totalInForeignCurr  -  subtotal");
-            invoiceItemDtos.forEach(item -> System.out.println(item.toString()));
-
-            String reportName = "Invoice_new.jasper";
+            String reportName = "invoice.jasper";
 
             final Map<String, Object> parameters = getInvoiceReportParam(shipment);
-            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(invoiceItemDtos);
-            parameters.put("REPORT_DATA_SOURCE", dataSource);
+            JRDataSource dataSource = new JRBeanCollectionDataSource(invoiceItemDtos);
+            parameters.put("COLLECTION_LIST", dataSource);
 
             try (InputStream stream = getClass().getResourceAsStream((REPORTS_PATH + reportName))) {
                 return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, dataSource));
@@ -1214,9 +1216,9 @@ public class ShowShipmentView extends VerticalLayout {
         parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(invoice.getConversionRate().setScale(2, RoundingMode.UNNECESSARY)));
 
         BigDecimal grandTotal = invoice.getInvoiceItems().stream().map(InvoiceItem::getTotalInLocalCurr).reduce(BigDecimal.ZERO, BigDecimal::add);
-        parameters.put("TOTAL", Util.getFormattedBigDecimal(grandTotal.setScale(2,RoundingMode.UNNECESSARY)));
+        parameters.put("GRAND_TOTAL", Util.getFormattedBigDecimal(grandTotal.setScale(1,RoundingMode.UNNECESSARY)));
         parameters.put("TOTAL_IN_WORD",
-                addPrefixSuffixToWordAmountByCurrency(invoice.getLocalCurrency(), Util.getAmountInWords(grandTotal)));
+                addSuffixToWordAmountByCurrency(invoice.getLocalCurrency(), Util.getAmountInWords(grandTotal)));
 
         BankDetails bankDetails = invoice.getBankDetails();
         parameters.put("BANK_NAME", bankDetails.getBankName());
@@ -1249,11 +1251,11 @@ public class ShowShipmentView extends VerticalLayout {
         return rate.multiply(new BigDecimal(quantity)).multiply(conversionRate);
     }
 
-    private String addPrefixSuffixToWordAmountByCurrency(AmountCurrency currency, String amount) {
+    private String addSuffixToWordAmountByCurrency(AmountCurrency currency, String amount) {
         if (currency == null) {
             currency = AmountCurrency.BDT;
         }
-        return "In words: " + amount + " " + currency.getCurrencyName() + " Only";
+        return amount + " " + currency.getCurrencyName() + " Only";
     }
 
     private static Button getConfirmDialogButton(Dialog dialog) {

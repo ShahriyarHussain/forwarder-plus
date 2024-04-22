@@ -51,7 +51,7 @@ public class AmountFormatter {
         boolean isNegative = false;
         String unsignedAmount;
         if (amount.startsWith("-")) {
-            unsignedAmount = amount.substring(1); //Removing the minus from amount
+            unsignedAmount = amount.substring(1); //
             isNegative = true;
         } else {
             unsignedAmount = amount;
