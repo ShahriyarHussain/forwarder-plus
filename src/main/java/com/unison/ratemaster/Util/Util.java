@@ -22,6 +22,8 @@ public class Util {
     private static final BigDecimal crore = BigDecimal.valueOf(10000000);
     public static final String imagePath = "Images/logo_best.png";
 
+    public static final String GENERIC_DATE_PATTERN = "dd-MMM-yyyy";
+
     public static Notification getNotificationForError(String errorMessage) {
         Notification notification = new Notification();
         notification.setDuration(3000);
@@ -51,6 +53,7 @@ public class Util {
     }
 
     public static String formatDateTime(String pattern, LocalDate localDate) {
+        if (localDate == null) return null;
         return localDate.format(DateTimeFormatter.ofPattern(pattern));
     }
 

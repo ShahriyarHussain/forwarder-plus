@@ -1,6 +1,7 @@
 package com.unison.ratemaster.View.Shipment;
 
 import com.unison.ratemaster.Dto.InvoiceItemDto;
+import com.unison.ratemaster.Dto.TSReportDto;
 import com.unison.ratemaster.Entity.*;
 import com.unison.ratemaster.Enum.*;
 import com.unison.ratemaster.Repository.InvoiceItemsService;
@@ -274,20 +275,10 @@ public class ShowShipmentView extends VerticalLayout {
         if (shipment.getSchedule().getLoadingPortEtd() == null) {
             errorList.add("Please provide Port Of Loading!");
         }
-        if (shipment.getSchedule().getFeederVesselName() == null) {
+        if (shipment.getSchedule().getPolVesselName() == null) {
             errorList.add("Please provide Feeder Vessel Name!");
         }
         if (shipment.getSchedule().getMvPortFeederEta() == null) {
-            errorList.add("Please provide Port Of Loading!");
-        }
-
-        if (shipment.getSchedule().getMotherVesselName() == null) {
-            errorList.add("Please provide Mother Vessel Name!");
-        }
-        if (shipment.getSchedule().getMotherVesselPort() == null) {
-            errorList.add("Please provide Mother Vessel Port!");
-        }
-        if (shipment.getSchedule().getMotherVesselPortEta() == null) {
             errorList.add("Please provide Port Of Loading!");
         }
 
@@ -299,47 +290,67 @@ public class ShowShipmentView extends VerticalLayout {
         }
 
 
-        // যদি প্রথম ও দ্বিতীয় ট্রান্সশিপমেন্ট থাকে তবে এর তথ্য যাচাইকরণ
-        if (shipment.getSchedule().getTsPort() != null) {
-            if (shipment.getSchedule().getTsPort().getPortName() == null) {
-                errorList.add("Please provide Transhipment Port Name!");
-            }
-            if (shipment.getSchedule().getTsPortEta() == null) {
-                errorList.add("Please provide Port Of Loading!");
-            }
-            if (shipment.getSchedule().getTsVesselName() == null) {
-                errorList.add("Please provide Port Of Loading!");
-            }
-        }
-
-        if (shipment.getSchedule().getTs2Port() != null) {
-            if (shipment.getSchedule().getTs2Port().getPortName() == null) {
-                errorList.add("Please Enter TS2_PORT value");
-            }
-            if (shipment.getSchedule().getTs2PortEta() == null) {
-                errorList.add("Please Enter TS2_ETA value");
-            }
+        // যদি ট্রান্সশিপমেন্ট থাকে তবে এর তথ্য যাচাইকরণ
+        Set<Transshipment> transshipments = shipment.getSchedule().getTransshipment();
+        if (transshipments != null && !transshipments.isEmpty()) {
+            transshipments.forEach(ts -> {
+                if (ts.getPort().getPortName() == null) {
+                    errorList.add("Please provide Transhipment Port Name!");
+                }
+                if (ts.getPortArrival() == null) {
+                    errorList.add("Please provide Transhipment Port ETA");
+                }
+            });
         }
 
         if (errorList.isEmpty()) {
             title.setText("ALL OK!");
-            dialog.getFooter().add(getShipmentAdviceDownloadButton(shipment));
+            ComboBox<ContactDetails> contactDetailsComboBox = new ComboBox<>("Choose Contact Details");
+            contactDetailsComboBox.setItems(contactDetailsService.getAllContactDetails());
+            contactDetailsComboBox.setItemLabelGenerator(ContactDetails::getName);
+            contactDetailsComboBox.addValueChangeListener(e -> {
+                if (e.getValue() != null) {
+                    contactDetailsComboBox.setLabel("You can now download!");
+                    dialog.getFooter().add(getShipmentAdviceDownloadButton(shipment, contactDetailsComboBox.getValue()));
+                }
+            });
+            dialog.add(contactDetailsComboBox);
         } else {
             listBox.setItems(errorList);
             title.setText("Please make corrections for following " + errorList.size() + " fields");
         }
+        dialog.setResizable(true);
+        dialog.setMinWidth(10, Unit.EM);
         return dialog;
     }
 
-    private Anchor getShipmentAdviceDownloadButton(Shipment shipment) {
-        Anchor anchor = new Anchor(new StreamResource(shipment.getBooking().getBookingNo() + ".pdf", (InputStreamFactory) () -> {
+    private Anchor getShipmentAdviceDownloadButton(Shipment shipment, ContactDetails contactDetails) {
+        Anchor anchor = new Anchor(new StreamResource("Shipment_Advice" + shipment.getBooking().getBookingNo() + ".pdf", (InputStreamFactory) () -> {
             Map<String, Object> parameters;
             String report = "shipment_advice.jasper";
-            parameters = prepareParamsForShipmentAdvice(shipment);
+            parameters = prepareParamsForShipmentAdvice(shipment, contactDetails);
+            List<TSReportDto> tsReportDtoList = new LinkedList<>();
 
-            if (parameters.get("TS2_PORT") != null) {
-                report = "shipment_advice_ts.jasper";
+            Schedule shipmentSchedule = shipment.getSchedule();
+
+            List<Transshipment> tsList = shipmentSchedule.getTransshipment().stream()
+                    .sorted(Comparator.comparing(Transshipment::getPortArrival)).collect(Collectors.toList());
+            for (int i = 0, count = 1; i < tsList.size(); i++) {
+                Transshipment transshipment = tsList.get(i);
+                if (transshipment.getVesselName() != null && !transshipment.getVesselName().isEmpty()) {
+                    tsReportDtoList.add(new TSReportDto("Vessel TS" + count++, transshipment.getVesselName()));
+                }
+                tsReportDtoList.add(new TSReportDto("ETA " + transshipment.getPort().getPortName(),
+                        Util.formatDateTime(Util.GENERIC_DATE_PATTERN, transshipment.getPortArrival())));
             }
+
+            tsReportDtoList.add(new TSReportDto(
+                    "ETA Dest. " + System.lineSeparator() + "(" + shipmentSchedule.getPortOfDestination().getPortName() + ")",
+                    Util.formatDateTime(Util.GENERIC_DATE_PATTERN, shipmentSchedule.getDestinationPortEta())));
+
+            JRDataSource dataSource = new JRBeanCollectionDataSource(tsReportDtoList);
+            parameters.put("COLLECTION_LIST", dataSource);
+
             try (InputStream stream = getClass().getResourceAsStream(REPORTS_PATH + report)) {
                 return new ByteArrayInputStream(JasperRunManager
                         .runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
@@ -350,55 +361,51 @@ public class ShowShipmentView extends VerticalLayout {
 
         Button downloadButton = new Button(new Icon(VaadinIcon.DOWNLOAD_ALT));
         downloadButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        downloadButton.setText("Download Shipment Advice");
+        downloadButton.setText("Download");
 
         anchor.getElement().setAttribute("download", true);
         anchor.add(downloadButton);
         return anchor;
     }
 
-    private Map<String, Object> prepareParamsForShipmentAdvice(Shipment shipment) {
+    private Map<String, Object> prepareParamsForShipmentAdvice(Shipment shipment, ContactDetails contactDetails) {
         Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("LOGO_URL", Util.imagePath);
+
         paramMap.put("ADVICE_DATE", getFormattedDate(LocalDate.now()));
         paramMap.put("BL_NO", shipment.getBlNo());
         paramMap.put("BOOKING_NO", shipment.getBooking().getBookingNo());
-        paramMap.put("INVOICE_NO", shipment.getInvoiceNo());
-        paramMap.put("STUFFING_DATE", shipment.getBooking().getStuffingDate().format(DateTimeFormatter.ofPattern("dd-MMM-yyyy")));
+        paramMap.put("SHIPPER_INVOICE_NO", shipment.getInvoiceNo());
+
+        paramMap.put("STUFFING_DATE", Util.formatDateTime(Util.GENERIC_DATE_PATTERN, shipment.getBooking().getStuffingDate()));
+        paramMap.put("STUFFING_DEPOT", shipment.getBooking().getStuffingDepot());
         paramMap.put("SHIPPER_NAME", shipment.getShipper().getName());
         paramMap.put("CONSIGNEE", shipment.getNotifyParty().getName());
-        paramMap.put("CONTAINER", shipment.getBooking().getNumOfContainers() + "x"
-                + shipment.getBooking().getContainerSize().getContainerSize());
+
+        paramMap.put("NUM_OF_CONTAINER", shipment.getBooking().getNumOfContainers() + "x" +
+                shipment.getBooking().getContainerSize().getContainerSize());
         paramMap.put("COMMODITY", shipment.getCommodity().getName());
         paramMap.put("QUANTITY", calculateQuantity(shipment.getBooking()));
         paramMap.put("GROSS_WEIGHT", calculateWeight(shipment.getBooking()));
-        paramMap.put("LOGO_URL", Util.imagePath);
+
         paramMap.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortShortCode());
         paramMap.put("MV_CONNECT_PORT", shipment.getSchedule().getMotherVesselPort().getPortShortCode());
-        paramMap.put("TS_PORT", shipment.getSchedule().getTsPort().getPortName());
-        paramMap.put("DEST_PORT", shipment.getSchedule().getPortOfDestination().getPortName());
         paramMap.put("POL_ETA", getFormattedDate(shipment.getSchedule().getLoadingPortEta()));
         paramMap.put("POL_ETD", getFormattedDate(shipment.getSchedule().getLoadingPortEtd()));
         paramMap.put("MV_PORT_FEEDER_ETA", getFormattedDate(shipment.getSchedule().getMvPortFeederEta()));
-        paramMap.put("MV_ETA", getFormattedDate(shipment.getSchedule().getMotherVesselPortEta()));
-        paramMap.put("TS_ETA", getFormattedDate(shipment.getSchedule().getTsPortEta()));
-        paramMap.put("DEST_ETA", getFormattedDate(shipment.getSchedule().getDestinationPortEta()));
-        paramMap.put("FEEDER", shipment.getSchedule().getFeederVesselName());
-        paramMap.put("MOTHER", shipment.getSchedule().getMotherVesselName());
-
-        //TS2 Addition
-        if (shipment.getSchedule().getTs2Port() != null) {
-            paramMap.put("TS2_PORT", shipment.getSchedule().getTs2Port().getPortName());
-            paramMap.put("TS2_ETA", getFormattedDate(shipment.getSchedule().getTs2PortEta()));
-            paramMap.put("TS_MOTHER", shipment.getSchedule().getTsVesselName());
-        }
+        paramMap.put("FEEDER", shipment.getSchedule().getPolVesselName());
 
         paramMap.put("SEAL_NO", getSealNo(shipment.getBooking()));
         paramMap.put("CONTAINERS", getContainers(shipment.getBooking()));
 
+        paramMap.put("SIGNED_BY", contactDetails.getName());
+        paramMap.put("SIGNED_BY_EMAIL", contactDetails.getEmail());
+        paramMap.put("SIGNED_BY_CONTACT", contactDetails.getContactNo());
+
         return paramMap;
     }
 
-    private Object calculateWeight(Booking booking) {
+    private String calculateWeight(Booking booking) {
         if (booking.getContainer() == null || booking.getContainer().isEmpty()) {
             return "";
         }
@@ -406,7 +413,7 @@ public class ShowShipmentView extends VerticalLayout {
         for (FreightContainer container : booking.getContainer()) {
             grossWeight = grossWeight.add(container.getGrossWeight());
         }
-        return grossWeight + " KGS";
+        return Util.getFormattedBigDecimal(grossWeight) + " KGS";
     }
 
     private String calculateQuantity(Booking booking) {
@@ -586,7 +593,7 @@ public class ShowShipmentView extends VerticalLayout {
                 grid.setItems(shipmentService.getAllShipments());
                 dialog.close();
             } catch (Exception e) {
-                //e.printStackTrace();
+                e.printStackTrace();
                 Util.getNotificationForError("Unexpected Error: " + e.getMessage()).open();
             }
         });
@@ -623,7 +630,7 @@ public class ShowShipmentView extends VerticalLayout {
                 masterBl = inputStream.readAllBytes();
 
             } catch (IOException e) {
-                //e.printStackTrace();
+                e.printStackTrace();
                 Util.getNotificationForError("Error: " + e.getMessage()).open();
             }
         });
@@ -722,13 +729,6 @@ public class ShowShipmentView extends VerticalLayout {
         Button saveButton = new Button("Save Booking");
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         saveButton.addClickListener(event -> {
-            if (containerList.size() != booking.getNumOfContainers()) {
-                new ConfirmDialog("Data Mismatch!",
-                        "Number of Containers Does Not Match With Entered Containers." + System.lineSeparator() +
-                                "Entered Containers: " + containerList.size() + ", " + " Number of Containers = " + booking.getNumOfContainers(),
-                        "Go Back", e -> getChildren().close()).open();
-                return;
-            }
             booking.setBookingNo(bookingNo.getValue());
             booking.setContainerType(containerType.getValue());
             booking.setInvoiceNo(invoiceNo.getValue());
@@ -741,7 +741,17 @@ public class ShowShipmentView extends VerticalLayout {
             booking.setContainer(containerList);
             booking.setEnteredOn(LocalDateTime.now());
             bookingService.saveBooking(booking);
-            Util.getNotificationForSuccess("Booking Saved Successfully").open();
+
+            if (containerList.size() != booking.getNumOfContainers()) {
+                new ConfirmDialog("Data Mismatch Warning!",
+                        "Your Booking is SAVED. But Number of Containers Does Not Match With Entered Containers."
+                                + System.lineSeparator() + "Entered Containers: " + containerList.size() + ", "
+                                + " Number of Containers = " + booking.getNumOfContainers(), "Ok",
+                        e -> getChildren().close()).open();
+
+            } else {
+                Util.getNotificationForSuccess("Booking Saved Successfully").open();
+            }
         });
 
         Hr line = new Hr();
@@ -764,14 +774,18 @@ public class ShowShipmentView extends VerticalLayout {
 
         Dialog dialog = new Dialog();
         Schedule schedule;
+        Set<Transshipment> transshipments;
         List<Port> portList = portService.getPorts();
+
 
         H3 pageTitle = new H3("Create Schedule");
         if (shipment.getSchedule() != null) {
             pageTitle = new H3("Edit Schedule");
             schedule = shipment.getSchedule();
+            transshipments = schedule.getTransshipment();
         } else {
             schedule = null;
+            transshipments = new HashSet<>();
         }
         FormLayout formLayout = new FormLayout();
         formLayout.setMaxWidth("100%");
@@ -792,41 +806,13 @@ public class ShowShipmentView extends VerticalLayout {
             }
         });
 
-
-        TextField motherVesselName = new TextField("Mother Vessel Name");
-        motherVesselName.setRequired(true);
-
         ComboBox<Port> motherVesselPort = Util.getPortComboBoxByItemListAndTitle(portList, "Mother Vessel Port");
-        DatePicker motherVesselPortEta = new DatePicker("Mother Vessel Port ETA");
         DatePicker mvPortEta = new DatePicker("Feeder Connect ETA");
         motherVesselPort.setRequired(true);
-        motherVesselPortEta.setRequired(true);
         motherVesselPort.addValueChangeListener(event -> {
             if (event != null && event.getValue() != null) {
                 Port vesselPort = event.getValue();
-                motherVesselPortEta.setLabel("Mother ETA " + vesselPort.getPortShortCode());
-                mvPortEta.setLabel("Feeder ETA " + vesselPort.getPortShortCode());
-            }
-        });
-
-        ComboBox<Port> tsPort = Util.getPortComboBoxByItemListAndTitle(portList, "Transshipment Port");
-        DatePicker tsPortEta = new DatePicker(tsPort.getLabel() + " ETA");
-        tsPort.addValueChangeListener(event -> {
-            if (event != null && event.getValue() != null) {
-                Port vesselPort = event.getValue();
-                tsPortEta.setLabel("ETA " + vesselPort.getPortCity());
-            }
-        });
-
-        TextField ts2VesselName = new TextField("TS2 Vessel Name");
-        ComboBox<Port> ts2Port = Util.getPortComboBoxByItemListAndTitle(portList, "Transshipment 2 Port");
-        DatePicker ts2PortEta = new DatePicker(ts2Port.getLabel() + " ETA");
-        ts2Port.addValueChangeListener(event -> {
-            ts2VesselName.setRequired(false);
-            if (event != null && event.getValue() != null) {
-                Port vesselPort = event.getValue();
-                ts2VesselName.setRequired(true);
-                ts2PortEta.setLabel("ETA " + vesselPort.getPortCity());
+                mvPortEta.setLabel("Feeder ETA" + vesselPort.getPortShortCode());
             }
         });
 
@@ -841,53 +827,85 @@ public class ShowShipmentView extends VerticalLayout {
             }
         });
 
-        Button addButton = new Button("Add");
+        TextField transhipmentVessel = new TextField("Transhipment Vessel:");
+        ComboBox<Port> tsPort = Util.getPortComboBoxByItemListAndTitle(portList, "Transshipment Port");
+        DatePicker tsPortEta = new DatePicker(tsPort.getLabel() + " ETA");
+        tsPort.addValueChangeListener(event -> {
+            if (event != null && event.getValue() != null) {
+                Port vesselPort = event.getValue();
+                tsPortEta.setLabel("ETA " + vesselPort.getPortCity());
+            }
+        });
+
+        Grid<Transshipment> transshipmentGrid = new Grid<>();
+
+        transshipmentGrid.setItems(transshipments);
+        transshipmentGrid.addColumn(Transshipment::getVesselName).setHeader("Vessel");
+        transshipmentGrid.addColumn(ts -> ts.getPort().getPortName()).setHeader("Port");
+        transshipmentGrid.addColumn(ts -> Util.formatDateTime(Util.GENERIC_DATE_PATTERN, ts.getPortArrival())).setHeader("ETA");
+        transshipmentGrid.addComponentColumn(ts -> {
+            Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
+            deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            deleteButton.addClickListener(event -> {
+                transshipments.remove(ts);
+                transshipmentGrid.setVisible(!transshipments.isEmpty());
+                transshipmentGrid.setItems(transshipments);
+            });
+            return deleteButton;
+        }).setHeader("Delete");
+        transshipmentGrid.setMaxHeight(10, Unit.EM);
+        transshipmentGrid.setVisible(!transshipments.isEmpty());
+        transshipmentGrid.setItems(transshipments);
+
+        Button addTsButton = new Button("Add", new Icon(VaadinIcon.PLUS));
+        addTsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        addTsButton.addClickListener(event -> {
+            if (tsPort.getValue() == null || tsPortEta.getValue() == null) {
+                Util.getNotificationForError("Please fill up the values correctly!").open();
+                return;
+            }
+            Transshipment ts = new Transshipment();
+            ts.setPort(tsPort.getValue());
+            ts.setVesselName(transhipmentVessel.getValue());
+            ts.setPortArrival(tsPortEta.getValue());
+            transshipments.add(ts);
+            transshipmentGrid.setVisible(true);
+            transshipmentGrid.setItems(transshipments);
+        });
+
+
+        Button addButton = new Button("Add Schedule");
+        addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         if (schedule != null) {
-            feederVesselName.setValue(schedule.getFeederVesselName());
+            feederVesselName.setValue(schedule.getPolVesselName());
             portOfLoading.setValue(schedule.getPortOfLoading());
             polEta.setValue(schedule.getLoadingPortEta());
             polEtd.setValue(schedule.getLoadingPortEtd());
-            motherVesselName.setValue(schedule.getMotherVesselName());
             motherVesselPort.setValue(schedule.getMotherVesselPort());
             mvPortEta.setValue(schedule.getMvPortFeederEta());
-            motherVesselPortEta.setValue(schedule.getMotherVesselPortEta());
-            tsPort.setValue(schedule.getTsPort());
-            tsPortEta.setValue(schedule.getTsPortEta());
+            transshipmentGrid.setItems(schedule.getTransshipment());
             destinationPort.setValue(schedule.getPortOfDestination());
             destinationPortEta.setValue(schedule.getDestinationPortEta());
-            if (schedule.getTs2Port() != null) {
-                ts2VesselName.setValue(schedule.getTsVesselName());
-                ts2PortEta.setValue(schedule.getTs2PortEta());
-                ts2Port.setValue(schedule.getTs2Port());
-            }
             addButton.setText("Save");
         }
 
         addButton.addClickListener(e -> {
             Schedule newSchedule = Objects.requireNonNullElseGet(schedule, Schedule::new);
-            newSchedule.setFeederVesselName(feederVesselName.getValue());
+            newSchedule.setPolVesselName(feederVesselName.getValue());
             newSchedule.setPortOfLoading(portOfLoading.getValue());
             newSchedule.setLoadingPortEta(polEta.getValue());
             newSchedule.setLoadingPortEtd(polEtd.getValue());
+
             newSchedule.setMvPortFeederEta(mvPortEta.getValue());
-
-            newSchedule.setMotherVesselName(motherVesselName.getValue());
             newSchedule.setMotherVesselPort(motherVesselPort.getValue());
-            newSchedule.setMotherVesselPortEta(motherVesselPortEta.getValue());
-
-            newSchedule.setTsPort(tsPort.getValue());
-            newSchedule.setTsPortEta(tsPortEta.getValue());
 
             newSchedule.setPortOfDestination(destinationPort.getValue());
             newSchedule.setDestinationPortEta(destinationPortEta.getValue());
 
-            newSchedule.setTsVesselName(ts2VesselName.getValue());
-            newSchedule.setTs2Port(ts2Port.getValue());
-            newSchedule.setTs2PortEta(ts2PortEta.getValue());
+            newSchedule.setTransshipment(transshipments);
 
             Schedule editedSchedule = scheduleService.saveSchedule(newSchedule);
-
             shipment.setSchedule(editedSchedule);
             shipmentService.saveEditedShipment(shipment);
             if (schedule != null) {
@@ -897,12 +915,16 @@ public class ShowShipmentView extends VerticalLayout {
             }
         });
 
-        formLayout.add(feederVesselName, motherVesselName, portOfLoading, motherVesselPort, polEta, motherVesselPortEta,
-                polEtd, mvPortEta, tsPort, tsPortEta, ts2VesselName, new Hr(), ts2Port, ts2PortEta, destinationPort, destinationPortEta);
-        addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        HorizontalLayout tsLayout = new HorizontalLayout();
+        tsLayout.setVerticalComponentAlignment(Alignment.END);
+        tsLayout.setAlignItems(Alignment.END);
+        tsLayout.add(transhipmentVessel, tsPort, tsPortEta, addTsButton);
+
+        formLayout.add(feederVesselName, portOfLoading, motherVesselPort, polEta,
+                polEtd, mvPortEta, destinationPort, destinationPortEta);
         Button cancelButton = new Button("Close", e -> dialog.close());
 
-        dialog.add(pageTitle, formLayout);
+        dialog.add(pageTitle, formLayout, tsLayout, transshipmentGrid);
         dialog.getFooter().add(cancelButton);
         dialog.getFooter().add(addButton);
         dialog.setMaxWidth("50%");
@@ -974,7 +996,7 @@ public class ShowShipmentView extends VerticalLayout {
                 calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue()))
         );
         conversionRate.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
-                        calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue())));
+                calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue())));
 
 
         Grid<InvoiceItem> invoiceItemGrid = new Grid<>();
@@ -1067,7 +1089,7 @@ public class ShowShipmentView extends VerticalLayout {
                 invoiceItem.setCurrency(foreignCurrency.getValue() ?
                         foreignCurrComboBox.getValue().toString() : localCurrencyComboBox.getValue().toString());
                 invoiceItem.setTotalInForeignCurr(
-                        calculateItemTotal(rate.getValue(), quantity.getValue(),false, BigDecimal.ONE));
+                        calculateItemTotal(rate.getValue(), quantity.getValue(), false, BigDecimal.ONE));
 
                 invoiceItem.setTotalInLocalCurr(itemTotalInLocalCurr.getValue());
 
@@ -1143,7 +1165,6 @@ public class ShowShipmentView extends VerticalLayout {
                 horizontalLayout, gap5, total);
 
         invoiceForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 6));
-        //invoiceForm.setColspan(gap0, 1);
         invoiceForm.setColspan(line1, 5);
         invoiceForm.setColspan(line2, 5);
         invoiceForm.setColspan(gap1, 3);
@@ -1186,7 +1207,7 @@ public class ShowShipmentView extends VerticalLayout {
         parameters.put("BL_NO", shipment.getBlNo());
 
         parameters.put("ADDRESS", shipment.getShipper().getAddress());
-        parameters.put("VESSEL", shipment.getSchedule().getFeederVesselName());
+        parameters.put("VESSEL", shipment.getSchedule().getPolVesselName());
 
         parameters.put("SHIPPER_EMAIL", shipment.getShipper().getEmail());
         parameters.put("POL_ETD", getFormattedDate(shipment.getSchedule().getLoadingPortEta()));
@@ -1216,7 +1237,7 @@ public class ShowShipmentView extends VerticalLayout {
         parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(invoice.getConversionRate().setScale(2, RoundingMode.UNNECESSARY)));
 
         BigDecimal grandTotal = invoice.getInvoiceItems().stream().map(InvoiceItem::getTotalInLocalCurr).reduce(BigDecimal.ZERO, BigDecimal::add);
-        parameters.put("GRAND_TOTAL", Util.getFormattedBigDecimal(grandTotal.setScale(1,RoundingMode.UNNECESSARY)));
+        parameters.put("GRAND_TOTAL", Util.getFormattedBigDecimal(grandTotal.setScale(1, RoundingMode.UNNECESSARY)));
         parameters.put("TOTAL_IN_WORD",
                 addSuffixToWordAmountByCurrency(invoice.getLocalCurrency(), Util.getAmountInWords(grandTotal)));
 

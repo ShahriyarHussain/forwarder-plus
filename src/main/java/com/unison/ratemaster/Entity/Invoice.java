@@ -22,7 +22,7 @@ public class Invoice {
     private BigDecimal grandTotal;
     private AmountCurrency foreignCurrency;
     private AmountCurrency localCurrency;
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     private Set<InvoiceItem> invoiceItems;
     @OneToOne
     private BankDetails bankDetails;
