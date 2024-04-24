@@ -6,31 +6,22 @@
 	<property name="com.jaspersoft.studio.unit.pageWidth" value="inch"/>
 	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w1" value="561"/>
 	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w2" value="426"/>
-	<style name="Table_TH" mode="Opaque" backcolor="#FFFFFF">
+	<style name="Table_TH" mode="Opaque" backcolor="#F0F8FF">
 		<box>
-			<pen lineWidth="0.5" lineColor="#000000"/>
 			<topPen lineWidth="0.5" lineColor="#000000"/>
-			<leftPen lineWidth="0.5" lineColor="#000000"/>
 			<bottomPen lineWidth="0.5" lineColor="#000000"/>
-			<rightPen lineWidth="0.5" lineColor="#000000"/>
 		</box>
 	</style>
-	<style name="Table_CH" mode="Opaque" backcolor="#FFFFFF">
+	<style name="Table_CH" mode="Opaque" backcolor="#BFE1FF">
 		<box>
-			<pen lineWidth="0.5" lineColor="#000000"/>
 			<topPen lineWidth="0.5" lineColor="#000000"/>
-			<leftPen lineWidth="0.5" lineColor="#000000"/>
 			<bottomPen lineWidth="0.5" lineColor="#000000"/>
-			<rightPen lineWidth="0.5" lineColor="#000000"/>
 		</box>
 	</style>
 	<style name="Table_TD" mode="Opaque" backcolor="#FFFFFF">
 		<box>
-			<pen lineWidth="0.5" lineColor="#000000"/>
 			<topPen lineWidth="0.5" lineColor="#000000"/>
-			<leftPen lineWidth="0.5" lineColor="#000000"/>
 			<bottomPen lineWidth="0.5" lineColor="#000000"/>
-			<rightPen lineWidth="0.5" lineColor="#000000"/>
 		</box>
 	</style>
 	<subDataset name="Dataset1" uuid="a26bbf1f-5d5c-40ae-9e0e-f7ba4012cc6d">
@@ -876,6 +867,10 @@
 								<reportElement x="0" y="0" width="274" height="21" uuid="2f00886e-248b-4706-853f-3140d5dc3aa4">
 									<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 								</reportElement>
+								<box>
+									<leftPen lineWidth="1.0"/>
+									<rightPen lineWidth="1.0"/>
+								</box>
 								<textElement verticalAlignment="Middle">
 									<font fontName="Inter" size="12" isBold="true"/>
 									<paragraph leftIndent="3"/>
@@ -883,21 +878,28 @@
 								<text><![CDATA[Projected Mother Vessel Details]]></text>
 							</staticText>
 						</jr:tableHeader>
-						<jr:column width="111" uuid="997a3b25-73df-4e3b-8dba-0839bfdbb074">
+						<jr:column width="97" uuid="997a3b25-73df-4e3b-8dba-0839bfdbb074">
 							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
 							<jr:detailCell style="Table_TD" height="17">
 								<property name="com.jaspersoft.studio.unit.width" value="px"/>
 								<property name="com.jaspersoft.studio.unit.height" value="px"/>
 								<box>
-									<topPen lineWidth="1.0"/>
-									<leftPen lineWidth="1.0"/>
-									<bottomPen lineWidth="1.0"/>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
 								</box>
 								<textField textAdjust="StretchHeight">
-									<reportElement x="0" y="0" width="111" height="17" uuid="2da36045-f578-46d8-9236-f88390a0e90b">
+									<reportElement x="0" y="0" width="97" height="17" uuid="2da36045-f578-46d8-9236-f88390a0e90b">
 										<property name="com.jaspersoft.studio.unit.width" value="pixel"/>
 										<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 									</reportElement>
+									<box>
+										<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+										<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+										<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+										<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+									</box>
 									<textElement verticalAlignment="Middle">
 										<font fontName="Inter"/>
 										<paragraph leftIndent="2"/>
@@ -916,6 +918,12 @@
 								</box>
 								<staticText>
 									<reportElement x="0" y="0" width="10" height="17" uuid="266923e8-c044-484e-921f-523821d75f23"/>
+									<box>
+										<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+										<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+										<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+										<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+									</box>
 									<textElement textAlignment="Center" verticalAlignment="Middle">
 										<font fontName="Inter"/>
 									</textElement>
@@ -923,7 +931,7 @@
 								</staticText>
 							</jr:detailCell>
 						</jr:column>
-						<jr:column width="153" uuid="9c134e46-88b4-42c6-b6ba-94a79375842a">
+						<jr:column width="167" uuid="9c134e46-88b4-42c6-b6ba-94a79375842a">
 							<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column3"/>
 							<jr:detailCell style="Table_TD" height="17">
 								<property name="com.jaspersoft.studio.unit.width" value="px"/>
@@ -933,9 +941,15 @@
 									<rightPen lineWidth="1.0"/>
 								</box>
 								<textField textAdjust="StretchHeight">
-									<reportElement x="0" y="0" width="153" height="17" uuid="3de72fcb-d316-4d46-9ece-9dc170ff14cd">
+									<reportElement x="0" y="0" width="167" height="17" uuid="3de72fcb-d316-4d46-9ece-9dc170ff14cd">
 										<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 									</reportElement>
+									<box>
+										<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+										<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+										<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+										<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									</box>
 									<textElement verticalAlignment="Middle">
 										<font fontName="Inter"/>
 										<paragraph leftIndent="2"/>

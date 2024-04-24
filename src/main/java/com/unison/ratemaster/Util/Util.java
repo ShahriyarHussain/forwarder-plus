@@ -24,21 +24,13 @@ public class Util {
 
     public static final String GENERIC_DATE_PATTERN = "dd-MMM-yyyy";
 
-    public static Notification getNotificationForError(String errorMessage) {
-        Notification notification = new Notification();
-        notification.setDuration(3000);
-        notification.setPosition(Notification.Position.TOP_CENTER);
-        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-        notification.setText(errorMessage);
-        return notification;
-    }
 
-    public static Notification getNotificationForSuccess(String successMessage) {
+    public static Notification getPopUpNotification(String message, int duration, NotificationVariant variant) {
         Notification notification = new Notification();
-        notification.setDuration(1500);
+        notification.setDuration(duration);
         notification.setPosition(Notification.Position.TOP_CENTER);
-        notification.addThemeVariants(NotificationVariant.LUMO_PRIMARY);
-        notification.setText(successMessage);
+        notification.addThemeVariants(variant);
+        notification.setText(message);
         return notification;
     }
 
