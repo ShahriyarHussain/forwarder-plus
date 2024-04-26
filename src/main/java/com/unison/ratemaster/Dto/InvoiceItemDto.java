@@ -26,8 +26,12 @@ public class InvoiceItemDto {
         } else {
             this.totalInForeignCurr = null;
         }
-        this.subtotal = item.getInvoice().getLocalCurrency().toString() + " " +
-                Util.getFormattedBigDecimal(item.getTotalInLocalCurr());
+        if (item.getInvoice() != null) {
+            this.subtotal = item.getInvoice().getLocalCurrency().toString() + " " +
+                    Util.getFormattedBigDecimal(item.getTotalInLocalCurr());
+        } else {
+            this.subtotal = Util.getFormattedBigDecimal(item.getTotalInLocalCurr());
+        }
     }
 
     @Override

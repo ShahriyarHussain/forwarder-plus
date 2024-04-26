@@ -21,8 +21,10 @@ public class Util {
     private static final BigDecimal lakh = BigDecimal.valueOf(100000);
     private static final BigDecimal crore = BigDecimal.valueOf(10000000);
     public static final String imagePath = "Images/logo_best.png";
+    public static final String REPORTS_PATH = "/Reports/";
 
     public static final String GENERIC_DATE_PATTERN = "dd-MMM-yyyy";
+
 
 
     public static Notification getPopUpNotification(String message, int duration, NotificationVariant variant) {
@@ -43,6 +45,8 @@ public class Util {
         portOfLoading.setRequiredIndicatorVisible(true);
         return portOfLoading;
     }
+
+
 
     public static String formatDateTime(String pattern, LocalDate localDate) {
         if (localDate == null) return null;

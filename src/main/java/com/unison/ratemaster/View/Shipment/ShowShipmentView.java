@@ -103,20 +103,21 @@ public class ShowShipmentView extends VerticalLayout {
         H2 title = new H2("View Shipment");
 
         grid = new Grid<>();
-        grid.setHeight(30, Unit.EM);
+        grid.setMinHeight(35, Unit.EM);
+
         Grid.Column<Shipment> blColumn = grid.addColumn(Shipment::getBlNo).setSortable(false).setFrozen(true).setAutoWidth(true);
         Grid.Column<Shipment> bookingColumn = grid.addColumn(shipment -> shipment.getBooking().getBookingNo()).setAutoWidth(true);
         Grid.Column<Shipment> shipperInvoiceColumn = grid.addColumn(Shipment::getInvoiceNo).setAutoWidth(true);
         Grid.Column<Shipment> invoiceColumn = grid.addColumn(shipment -> shipment.getInvoice().getInvoiceNo()).setAutoWidth(true);
 
         Grid.Column<Shipment> shipperColumn = grid.addColumn(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName())
-                .setTooltipGenerator(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName());
+                .setTooltipGenerator(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName()).setWidth("11em");
 
         Grid.Column<Shipment> numOfContainerColumn = grid.addColumn(shipment -> shipment.getBooking().getNumOfContainers() + "x" +
                 shipment.getBooking().getContainerSize().getContainerSize()).setAutoWidth(true);
 
         Grid.Column<Shipment> statusColumn = grid.addColumn(shipment -> shipment.getStatus().name())
-                .setTooltipGenerator(shipment -> shipment.getStatus().toString()).setAutoWidth(true);
+                .setTooltipGenerator(shipment -> shipment.getStatus().toString()).setAutoWidth(true).setSortable(true);
 
         Grid.Column<Shipment> createdColumn = grid.addColumn(shipment -> shipment.getCreatedOn()
                 .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true).setAutoWidth(true);
@@ -141,7 +142,8 @@ public class ShowShipmentView extends VerticalLayout {
         }).setTooltipGenerator(shipment -> shipment.getMasterBl() == null ? "B/L Not Found" : "").setAutoWidth(true);
 
 
-        GridListDataView<Shipment> dataView = grid.setItems(shipmentService.getAllShipments());
+        List<Shipment> shipments = shipmentService.getAllShipments();
+        GridListDataView<Shipment> dataView = grid.setItems(shipments);
         ShipmentFilter shipmentFilter = new ShipmentFilter(dataView);
 
         grid.getHeaderRows().clear();
@@ -182,7 +184,7 @@ public class ShowShipmentView extends VerticalLayout {
         });
         menu.addItem("Edit Booking", event -> {
             if (event.getItem().isPresent()) {
-                createBookingEditorDialog(event.getItem().get()).open();
+                addContainerDetailsDialog(event.getItem().get()).open();
             }
         });
         menu.add(new Hr());
@@ -203,7 +205,9 @@ public class ShowShipmentView extends VerticalLayout {
             grid.setItems(shipmentService.getAllShipments());
         });
 
-        VerticalLayout layout = new VerticalLayout(grid);
+        Label itemCount = new Label("Total Shipments: " + shipments.size());
+
+        VerticalLayout layout = new VerticalLayout(grid, itemCount);
         layout.setPadding(false);
         add(title, layout);
     }
@@ -644,13 +648,13 @@ public class ShowShipmentView extends VerticalLayout {
         return upload;
     }
 
-    public Dialog createBookingEditorDialog(Shipment shipment) {
+    public Dialog addContainerDetailsDialog(Shipment shipment) {
         Dialog dialog = new Dialog();
 
         Booking booking = shipment.getBooking();
         Set<FreightContainer> containerList = booking.getContainer();
 
-        H2 title = new H2("Create Booking");
+        H2 title = new H2("Add Container Details");
 
         TextField bookingNo = new TextField("Booking No");
         bookingNo.setValue(booking.getBookingNo());
@@ -708,6 +712,11 @@ public class ShowShipmentView extends VerticalLayout {
         containerGrid.setMaxHeight(20, Unit.EM);
         containerGrid.setVisible(!containerList.isEmpty());
         containerGrid.setItems(containerList);
+
+        Label totalContainers = new Label();
+        totalContainers.setVisible(!containerList.isEmpty());
+        totalContainers.setText("( " + containerList.size() + " Containers Added)");
+
 
         TextField containerNo = new TextField("Container No.");
         TextField sealNo = new TextField("Seal No.");
@@ -770,6 +779,8 @@ public class ShowShipmentView extends VerticalLayout {
             }
             containerGrid.setVisible(true);
             containerGrid.setItems(containerList);
+            totalContainers.setVisible(!containerList.isEmpty());
+            totalContainers.setText("( " + containerList.size() + " Containers Added)");
         });
         addButton.setEnabled(bookingNo.getValue() != null && !bookingNo.getValue().isEmpty());
 
@@ -807,11 +818,11 @@ public class ShowShipmentView extends VerticalLayout {
         FormLayout formLayout = new FormLayout();
         formLayout.add(bookingNo, invoiceNo, containerType, numOfCont, containerSize, stuffingDate, stuffingCost, stuffingDepot,
                 line, bulkEntryCheckBox, containerNo, sealNo, bulkContainerNo, bulkSealNo, grossWeight, noOfPackages,
-                packageUnitComboBox, addButton, containerGrid);
+                packageUnitComboBox, addButton, totalContainers);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
         formLayout.setColspan(line, 4);
         formLayout.setColspan(containerGrid, 4);
-        dialog.add(title, formLayout);
+        dialog.add(title, formLayout, containerGrid);
         dialog.getFooter().add(saveButton);
         dialog.getFooter().add(new Button("Close", event -> dialog.close()));
         return dialog;
