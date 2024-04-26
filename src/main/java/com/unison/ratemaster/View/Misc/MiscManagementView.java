@@ -20,6 +20,7 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -342,10 +343,11 @@ public class MiscManagementView extends VerticalLayout {
             newClient.setEmail(email.getValue());
             try {
                 clientService.saveClient(newClient);
-                Util.getNotificationForSuccess("Client Saved!").open();
+                Util.getPopUpNotification("Client Saved!", 2500, NotificationVariant.LUMO_SUCCESS).open();
             } catch (Exception ex) {
                 ex.printStackTrace();
-                Util.getNotificationForError("Error! " + ex.getMessage()).open();
+                Util.getPopUpNotification("Error! " + ex.getMessage(), 3000,
+                        NotificationVariant.LUMO_ERROR).open();
             }
         });
 
@@ -377,7 +379,7 @@ public class MiscManagementView extends VerticalLayout {
             commodity.setDangerousGoods(isDangerousGoods.isEnabled());
 
             commodityService.saveCommodity(commodity);
-            Util.getNotificationForSuccess("Commodity Added!").open();
+            Util.getPopUpNotification("Commodity Added!", 2500, NotificationVariant.LUMO_SUCCESS).open();
         });
 
         formLayout.add(commodityName, hsCode, isDangerousGoods);
@@ -411,7 +413,7 @@ public class MiscManagementView extends VerticalLayout {
             port.setPortCity(portCity.getValue());
 
             portService.savePort(port);
-            Util.getNotificationForSuccess("Port Added!").open();
+            Util.getPopUpNotification("Port Added!", 2500, NotificationVariant.LUMO_SUCCESS).open();
         });
 
         formLayout.add(label, portShortCode, portName, portCountry, portCity);
@@ -441,7 +443,7 @@ public class MiscManagementView extends VerticalLayout {
             carrier.setCountry(carrierCountry.getValue());
 
             carrierService.saveCarrier(carrier);
-            Util.getNotificationForSuccess("Carrier Added!").open();
+            Util.getPopUpNotification("Carrier Added!", 2500, NotificationVariant.LUMO_SUCCESS).open();
         });
 
         formLayout.add(carrierName, carrierCountry);
@@ -475,7 +477,7 @@ public class MiscManagementView extends VerticalLayout {
             bankDetails.setBranchName(branchName.getValue());
 
             bankDetailsService.saveBankDetails(bankDetails);
-            Util.getNotificationForSuccess("Bank Details Added!").open();
+            Util.getPopUpNotification("Bank Details Added!", 2500, NotificationVariant.LUMO_SUCCESS).open();
         });
 
         formLayout.add(bankName, acNo, acName, routingNo, branchName);
@@ -507,7 +509,7 @@ public class MiscManagementView extends VerticalLayout {
             contactDetails.setRemarks(remarks.getValue());
 
             contactDetailsService.saveContactDetails(contactDetails);
-            Util.getNotificationForSuccess("Contact Details Added!").open();
+            Util.getPopUpNotification("Contact Details Added!", 2500, NotificationVariant.LUMO_SUCCESS).open();
         });
 
         formLayout.add(contactName, contactNo, email, remarks);

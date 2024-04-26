@@ -2,6 +2,7 @@ package com.unison.ratemaster.View;
 
 import com.unison.ratemaster.Enum.View;
 import com.unison.ratemaster.View.Misc.MiscManagementView;
+import com.unison.ratemaster.View.Other.StandaloneInvoiceView;
 import com.unison.ratemaster.View.Rate.CreateRateView;
 import com.unison.ratemaster.View.Rate.ShowRateView;
 import com.unison.ratemaster.View.Shipment.CreateShipmentView;
@@ -44,8 +45,8 @@ public class MainView extends AppLayout {
                 createTab(VaadinIcon.SEARCH, View.VIEW_RATE),
                 createTab(VaadinIcon.PLUS, View.CREATE_SHIPMENT),
                 createTab(VaadinIcon.GLOBE, View.VIEW_SHIPMENT),
-                createTab(VaadinIcon.DATABASE, View.MISC_MANAGEMENT)
-//                createTab(VaadinIcon.PENCIL, View.CREATE_BILL_OF_LADING),
+                createTab(VaadinIcon.DATABASE, View.MISC_MANAGEMENT),
+                createTab(VaadinIcon.BRIEFCASE, View.CREATE_INVOICE)
         );
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
         return tabs;
@@ -67,20 +68,17 @@ public class MainView extends AppLayout {
             case VIEW_RATE:
                 link.setRoute(ShowRateView.class);
                 break;
-//            case SCHEDULE_PANEL:
-//                link.setRoute(CreateScheduleView.class);
-//                break;
             case CREATE_SHIPMENT:
                 link.setRoute(CreateShipmentView.class);
                 break;
             case VIEW_SHIPMENT:
                 link.setRoute(ShowShipmentView.class);
                 break;
-//            case MANAGE_PARTIES:
-//                link.setRoute(ManagePartyView.class);
-//                break;
             case MISC_MANAGEMENT:
                 link.setRoute(MiscManagementView.class);
+                break;
+            case CREATE_INVOICE:
+                link.setRoute(StandaloneInvoiceView.class);
                 break;
 //            case CREATE_BILL_OF_LADING:
 //                link.setRoute(CreateBLView.class);

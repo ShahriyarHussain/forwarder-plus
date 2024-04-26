@@ -19,6 +19,7 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -112,7 +113,7 @@ public class CreateBookingView extends VerticalLayout {
             booking.setContainer(containerList);
             booking.setEnteredOn(LocalDateTime.now());
             //bookingService.saveBooking(booking, containerList);
-            Util.getNotificationForSuccess("Booking Saved Successfully").open();
+            Util.getPopUpNotification("Booking Saved Successfully", 2500, NotificationVariant.LUMO_SUCCESS).open();
         });
         Hr line = new Hr();
         line.setHeight("5px");

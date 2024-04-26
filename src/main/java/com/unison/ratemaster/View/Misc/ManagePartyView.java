@@ -14,6 +14,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -78,7 +79,7 @@ public class ManagePartyView extends VerticalLayout {
             client.setEmail(email.getValue());
 
             clientService.saveClient(client);
-            Util.getNotificationForSuccess("Client Added!").open();
+            Util.getPopUpNotification("Client Added!", 2500, NotificationVariant.LUMO_SUCCESS).open();
             clientGrid.setItems(clientService.getAllClients());
         });
 
