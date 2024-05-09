@@ -13,6 +13,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -125,12 +126,12 @@ public class CreateShipmentView extends VerticalLayout {
 
         Button saveButton = new Button("Save", event -> {
             if (doesFormContainInvalidData()) {
-                Util.getNotificationForError("Please provide valid data").open();
+                Util.getPopUpNotification("Please provide valid data", 3500, NotificationVariant.LUMO_ERROR).open();
                 return;
             }
             if (isShipperInvoiceAlreadyExists()) {
-                Util.getNotificationForError("A shipment invoice already exists with the number " +
-                        shipperInvoiceNo.getValue()).open();
+                Util.getPopUpNotification("A shipment invoice already exists with the number " +
+                        shipperInvoiceNo.getValue() , 3500, NotificationVariant.LUMO_ERROR).open();
                 return;
             }
             Shipment shipment = new Shipment();
@@ -152,9 +153,7 @@ public class CreateShipmentView extends VerticalLayout {
 
             Invoice invoice = new Invoice();
             invoice.setInvoiceNo(invoiceService.getInvoiceNo());
-            invoice.setGoodsDescription(shipment.getCommodity().getName());
             invoice = invoiceService.saveInvoice(invoice);
-
             shipment.setInvoice(invoice);
 
             Booking booking = new Booking();
@@ -170,9 +169,11 @@ public class CreateShipmentView extends VerticalLayout {
 
             try {
                 shipmentService.createNewShipment(shipment, booking);
-                Util.getNotificationForSuccess("Shipment Created Successfully!").open();
+                Util.getPopUpNotification("Shipment Created Successfully!", 2500,
+                        NotificationVariant.LUMO_SUCCESS).open();
             } catch (Exception e) {
-                Util.getNotificationForError("Unexpected Error: " + e.getMessage()).open();
+                Util.getPopUpNotification("Unexpected Error: " + e.getMessage(), 3500,
+                        NotificationVariant.LUMO_ERROR).open();
             }
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -256,13 +257,14 @@ public class CreateShipmentView extends VerticalLayout {
             try {
                 this.masterBl = inputStream.readAllBytes();
             } catch (IOException e) {
-                Util.getNotificationForError("Error: " + e.getMessage()).open();
+                Util.getPopUpNotification("Error: " + e.getMessage(), 3500,
+                        NotificationVariant.LUMO_ERROR).open();
             }
         });
 
         upload.addFileRejectedListener(event -> {
             String errorMessage = event.getErrorMessage();
-            Util.getNotificationForError(errorMessage).open();
+            Util.getPopUpNotification(errorMessage, 3500, NotificationVariant.LUMO_ERROR).open();
         });
         upload.setUploadButton(new Button("Upload MB/L"));
         return upload;

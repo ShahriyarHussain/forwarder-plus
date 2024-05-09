@@ -7,13 +7,14 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum AmountCurrency {
     USD("US Dollar"),
-    BDT("Bangladeshi Taka"),
+    BDT("Taka"),
     JPY("Japanese Yen"),
     AUD("Australian Dollar"),
     CAD("Canadian Dollar"),
     HKD("Hong Kong Dollar"),
     CNY("Chinese Yen"),
-    EUR("EURO");
+    EUR("Euro"),
+    GBP("Pound");
 
     private final String currencyName;
 }

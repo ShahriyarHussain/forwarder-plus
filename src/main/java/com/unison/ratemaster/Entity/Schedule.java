@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.util.Set;
 
 @Entity
 @Table(name = "SCHEDULE")
@@ -16,34 +17,22 @@ public class Schedule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String feederVesselName;
 
     @OneToOne
     private Port portOfLoading;
+    private String polVesselName;
     private LocalDate loadingPortEta;
     private LocalDate loadingPortEtd;
     private LocalDate mvPortFeederEta;
-
-    private String motherVesselName;
     @OneToOne
     private Port motherVesselPort;
-    private LocalDate motherVesselPortEta;
-
-    private String tsVesselName;
-    @OneToOne
-    private Port tsPort;
-    private LocalDate tsPortEta;
-
-    @OneToOne
-    private Port ts2Port;
-    private LocalDate ts2PortEta;
 
     @OneToOne
     private Port portOfDestination;
     private LocalDate destinationPortEta;
 
-//    @OneToMany(cascade = CascadeType.REMOVE)
-//    private Set<Transshipment> transshipment;
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private Set<Transshipment> transshipment;
 
     public String getScheduleSummary() {
         return this.getPortOfLoading().getPortName() + " to "

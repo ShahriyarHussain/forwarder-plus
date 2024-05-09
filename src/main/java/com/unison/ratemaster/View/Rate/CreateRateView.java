@@ -13,6 +13,7 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Hr;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.BigDecimalField;
@@ -114,7 +115,7 @@ public class CreateRateView extends VerticalLayout {
             rate.setTruckingRate(exwRate.getValue());
             rate.setFactoryLocation(factoryLocation.getValue());
             rateService.saveRate(rate);
-            Util.getNotificationForSuccess("Rate Saved!").open();
+            Util.getPopUpNotification("Rate Saved!", 2500, NotificationVariant.LUMO_SUCCESS).open();
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         add(pageTitle, formLayout, saveButton);

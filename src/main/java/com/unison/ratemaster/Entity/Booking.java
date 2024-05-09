@@ -24,7 +24,7 @@ public class Booking {
     private Integer numOfContainers;
     private ContainerType containerType;
     private ContainerSize containerSize;
-    @OneToMany(mappedBy = "bookingId", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     private Set<FreightContainer> container;
     private LocalDate stuffingDate;
     private String stuffingDepot;

@@ -1,7 +1,11 @@
 package com.unison.ratemaster.View.Shipment;
 
+import com.unison.ratemaster.Dto.ContainerDto;
+import com.unison.ratemaster.Dto.InvoiceItemDto;
+import com.unison.ratemaster.Dto.TSReportDto;
 import com.unison.ratemaster.Entity.*;
 import com.unison.ratemaster.Enum.*;
+import com.unison.ratemaster.Repository.InvoiceItemsService;
 import com.unison.ratemaster.Service.*;
 import com.unison.ratemaster.Util.ShipmentFilter;
 import com.unison.ratemaster.Util.Util;
@@ -11,6 +15,7 @@ import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -24,6 +29,7 @@ import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.listbox.ListBox;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.*;
@@ -34,9 +40,11 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
+import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperRunManager;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 
 import javax.annotation.security.PermitAll;
 import java.io.ByteArrayInputStream;
@@ -49,6 +57,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 @PageTitle("View Shipments")
@@ -57,10 +66,7 @@ import java.util.function.Consumer;
 
 public class ShowShipmentView extends VerticalLayout {
 
-    byte[] masterBl;
-
     private final String REPORTS_PATH = "/Reports/";
-
     private final ShipmentService shipmentService;
     private final ClientService clientService;
     private final ScheduleService scheduleService;
@@ -71,11 +77,15 @@ public class ShowShipmentView extends VerticalLayout {
     private final CarrierService carrierService;
     private final BankDetailsService bankDetailsService;
     private final ContactDetailsService contactDetailsService;
+    private final InvoiceItemsService invoiceItemsService;
+
+    private byte[] masterBl;
+    private final Grid<Shipment> grid;
 
     public ShowShipmentView(ShipmentService shipmentService, ClientService clientService, ScheduleService scheduleService,
-                            PortService portService,BookingService bookingService, CommodityService commodityService,
+                            PortService portService, BookingService bookingService, CommodityService commodityService,
                             InvoiceService invoiceService, CarrierService carrierService, BankDetailsService bankDetailsService,
-                            ContactDetailsService contactDetailsService) {
+                            ContactDetailsService contactDetailsService, InvoiceItemsService invoiceItemsService) {
 
         this.shipmentService = shipmentService;
         this.clientService = clientService;
@@ -87,31 +97,40 @@ public class ShowShipmentView extends VerticalLayout {
         this.carrierService = carrierService;
         this.bankDetailsService = bankDetailsService;
         this.contactDetailsService = contactDetailsService;
+        this.invoiceItemsService = invoiceItemsService;
 
 
         H2 title = new H2("View Shipment");
 
-        Grid<Shipment> grid = new Grid<>();
-        grid.setHeight(30, Unit.EM);
-        Grid.Column<Shipment> blColumn = grid.addColumn(Shipment::getBlNo).setSortable(false).setFrozen(true).setAutoWidth(true);
-        Grid.Column<Shipment> bookingColumn = grid.addColumn(shipment -> shipment.getBooking().getBookingNo()).setAutoWidth(true);
-        Grid.Column<Shipment> shipperInvoiceColumn = grid.addColumn(Shipment::getInvoiceNo).setAutoWidth(true);
-        Grid.Column<Shipment> invoiceColumn = grid.addColumn(shipment -> shipment.getInvoice().getInvoiceNo()).setAutoWidth(true);
+        grid = new Grid<>();
+        grid.setMinHeight(35, Unit.EM);
+
+        Grid.Column<Shipment> blColumn = grid.addColumn(Shipment::getBlNo).setSortable(false).setFrozen(true)
+                .setAutoWidth(true).setResizable(true);;
+        Grid.Column<Shipment> bookingColumn = grid.addColumn(shipment -> shipment.getBooking().getBookingNo())
+                .setAutoWidth(true).setResizable(true);;
+        Grid.Column<Shipment> shipperInvoiceColumn = grid.addColumn(Shipment::getInvoiceNo).setAutoWidth(true).setResizable(true);;
+        Grid.Column<Shipment> invoiceColumn = grid.addColumn(shipment -> shipment.getInvoice().getInvoiceNo())
+                .setAutoWidth(true).setResizable(true);;
 
         Grid.Column<Shipment> shipperColumn = grid.addColumn(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName())
-                .setTooltipGenerator(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName());
+                .setTooltipGenerator(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName())
+                .setWidth("11em").setResizable(true);;
 
         Grid.Column<Shipment> numOfContainerColumn = grid.addColumn(shipment -> shipment.getBooking().getNumOfContainers() + "x" +
-                shipment.getBooking().getContainerSize().getContainerSize()).setAutoWidth(true);
+                shipment.getBooking().getContainerSize().getContainerSize()).setAutoWidth(true).setResizable(true);;
 
         Grid.Column<Shipment> statusColumn = grid.addColumn(shipment -> shipment.getStatus().name())
-                .setTooltipGenerator(Shipment::getName).setAutoWidth(true);
+                .setTooltipGenerator(shipment -> shipment.getStatus().toString()).setAutoWidth(true)
+                .setSortable(true).setResizable(true);;
 
         Grid.Column<Shipment> createdColumn = grid.addColumn(shipment -> shipment.getCreatedOn()
-                .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true).setAutoWidth(true);
+                .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true)
+                .setComparator(Shipment::getCreatedOn).setAutoWidth(true).setResizable(true);;
 
         Grid.Column<Shipment> lastUpdateColumn = grid.addColumn(shipment -> shipment.getLastUpdated()
-                .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true).setAutoWidth(true);
+                .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true)
+                .setComparator(Shipment::getLastUpdated).setAutoWidth(true).setResizable(true);
 
         Grid.Column<Shipment> mblColumn = grid.addComponentColumn(shipment -> {
             Button downloadButton = new Button(new Icon(VaadinIcon.DOWNLOAD));
@@ -127,10 +146,15 @@ public class ShowShipmentView extends VerticalLayout {
             anchor.getElement().setAttribute("download", true);
             anchor.add(downloadButton);
             return anchor;
-        }).setTooltipGenerator(shipment -> shipment.getMasterBl() == null ? "B/L Not Found" : "").setAutoWidth(true);
+        }).setTooltipGenerator(shipment -> shipment.getMasterBl() == null ? "B/L Not Found" : "")
+                .setAutoWidth(true).setResizable(true);;
+
+        grid.setRowsDraggable(true);
+        grid.setColumnReorderingAllowed(true);
 
 
-        GridListDataView<Shipment> dataView = grid.setItems(shipmentService.getAllShipments());
+        List<Shipment> shipments = shipmentService.getAllShipments();
+        GridListDataView<Shipment> dataView = grid.setItems(shipments);
         ShipmentFilter shipmentFilter = new ShipmentFilter(dataView);
 
         grid.getHeaderRows().clear();
@@ -147,7 +171,7 @@ public class ShowShipmentView extends VerticalLayout {
         headerRow.getCell(shipperColumn).setComponent(
                 createNonFilterHeader("Shipper"));
         headerRow.getCell(numOfContainerColumn).setComponent(
-                createNonFilterHeader("Booking No"));
+                createNonFilterHeader("Container"));
         headerRow.getCell(statusColumn).setComponent(
                 createNonFilterHeader("Status"));
         headerRow.getCell(createdColumn).setComponent(
@@ -171,7 +195,7 @@ public class ShowShipmentView extends VerticalLayout {
         });
         menu.addItem("Edit Booking", event -> {
             if (event.getItem().isPresent()) {
-                createBookingEditorDialog(event.getItem().get()).open();
+                addContainerDetailsDialog(event.getItem().get()).open();
             }
         });
         menu.add(new Hr());
@@ -192,7 +216,9 @@ public class ShowShipmentView extends VerticalLayout {
             grid.setItems(shipmentService.getAllShipments());
         });
 
-        VerticalLayout layout = new VerticalLayout(grid);
+        Label itemCount = new Label("Total Shipments: " + shipments.size());
+
+        VerticalLayout layout = new VerticalLayout(grid, itemCount);
         layout.setPadding(false);
         add(title, layout);
     }
@@ -266,20 +292,10 @@ public class ShowShipmentView extends VerticalLayout {
         if (shipment.getSchedule().getLoadingPortEtd() == null) {
             errorList.add("Please provide Port Of Loading!");
         }
-        if (shipment.getSchedule().getFeederVesselName() == null) {
+        if (shipment.getSchedule().getPolVesselName() == null) {
             errorList.add("Please provide Feeder Vessel Name!");
         }
         if (shipment.getSchedule().getMvPortFeederEta() == null) {
-            errorList.add("Please provide Port Of Loading!");
-        }
-
-        if (shipment.getSchedule().getMotherVesselName() == null) {
-            errorList.add("Please provide Mother Vessel Name!");
-        }
-        if (shipment.getSchedule().getMotherVesselPort() == null) {
-            errorList.add("Please provide Mother Vessel Port!");
-        }
-        if (shipment.getSchedule().getMotherVesselPortEta() == null) {
             errorList.add("Please provide Port Of Loading!");
         }
 
@@ -291,47 +307,67 @@ public class ShowShipmentView extends VerticalLayout {
         }
 
 
-        // যদি প্রথম ও দ্বিতীয় ট্রান্সশিপমেন্ট থাকে তবে এর তথ্য যাচাইকরণ
-        if (shipment.getSchedule().getTsPort() != null) {
-            if (shipment.getSchedule().getTsPort().getPortName() == null) {
-                errorList.add("Please provide Transhipment Port Name!");
-            }
-            if (shipment.getSchedule().getTsPortEta() == null) {
-                errorList.add("Please provide Port Of Loading!");
-            }
-            if (shipment.getSchedule().getTsVesselName() == null) {
-                errorList.add("Please provide Port Of Loading!");
-            }
-        }
-
-        if (shipment.getSchedule().getTs2Port() != null) {
-            if (shipment.getSchedule().getTs2Port().getPortName() == null) {
-                errorList.add("Please Enter TS2_PORT value");
-            }
-            if (shipment.getSchedule().getTs2PortEta() == null) {
-                errorList.add("Please Enter TS2_ETA value");
-            }
+        // যদি ট্রান্সশিপমেন্ট থাকে তবে এর তথ্য যাচাইকরণ
+        Set<Transshipment> transshipments = shipment.getSchedule().getTransshipment();
+        if (transshipments != null && !transshipments.isEmpty()) {
+            transshipments.forEach(ts -> {
+                if (ts.getPort().getPortName() == null) {
+                    errorList.add("Please provide Transhipment Port Name!");
+                }
+                if (ts.getPortArrival() == null) {
+                    errorList.add("Please provide Transhipment Port ETA");
+                }
+            });
         }
 
         if (errorList.isEmpty()) {
             title.setText("ALL OK!");
-            dialog.getFooter().add(getShipmentAdviceDownloadButton(shipment));
+            ComboBox<ContactDetails> contactDetailsComboBox = new ComboBox<>("Choose Contact Details");
+            contactDetailsComboBox.setItems(contactDetailsService.getAllContactDetails());
+            contactDetailsComboBox.setItemLabelGenerator(ContactDetails::getName);
+            contactDetailsComboBox.addValueChangeListener(e -> {
+                if (e.getValue() != null) {
+                    contactDetailsComboBox.setLabel("You can now download!");
+                    dialog.getFooter().add(getShipmentAdviceDownloadButton(shipment, contactDetailsComboBox.getValue()));
+                }
+            });
+            dialog.add(contactDetailsComboBox);
         } else {
             listBox.setItems(errorList);
             title.setText("Please make corrections for following " + errorList.size() + " fields");
         }
+        dialog.setResizable(true);
+        dialog.setMinWidth(10, Unit.EM);
         return dialog;
     }
 
-    private Anchor getShipmentAdviceDownloadButton(Shipment shipment) {
-        Anchor anchor = new Anchor(new StreamResource(shipment.getBooking().getBookingNo() + ".pdf", (InputStreamFactory) () -> {
+    private Anchor getShipmentAdviceDownloadButton(Shipment shipment, ContactDetails contactDetails) {
+        Anchor anchor = new Anchor(new StreamResource("Shipment_Advice_" + shipment.getBooking().getBookingNo() + ".pdf", (InputStreamFactory) () -> {
             Map<String, Object> parameters;
             String report = "shipment_advice.jasper";
-            parameters = prepareParamsForShipmentAdvice(shipment);
+            parameters = prepareParamsForShipmentAdvice(shipment, contactDetails);
+            List<TSReportDto> tsReportDtoList = new LinkedList<>();
 
-            if (parameters.get("TS2_PORT") != null) {
-                report = "shipment_advice_ts.jasper";
+            Schedule shipmentSchedule = shipment.getSchedule();
+
+            List<Transshipment> tsList = shipmentSchedule.getTransshipment().stream()
+                    .sorted(Comparator.comparing(Transshipment::getPortArrival)).collect(Collectors.toList());
+            for (int i = 0, count = 1; i < tsList.size(); i++) {
+                Transshipment transshipment = tsList.get(i);
+                if (transshipment.getVesselName() != null && !transshipment.getVesselName().isEmpty()) {
+                    tsReportDtoList.add(new TSReportDto("Vessel TS" + count++, transshipment.getVesselName()));
+                }
+                tsReportDtoList.add(new TSReportDto("ETA " + transshipment.getPort().getPortName(),
+                        Util.formatDateTime(Util.GENERIC_DATE_PATTERN, transshipment.getPortArrival())));
             }
+
+            tsReportDtoList.add(new TSReportDto(
+                    "ETA Dest. " + System.lineSeparator() + "(" + shipmentSchedule.getPortOfDestination().getPortName() + ")",
+                    Util.formatDateTime(Util.GENERIC_DATE_PATTERN, shipmentSchedule.getDestinationPortEta())));
+
+            JRDataSource dataSource = new JRBeanCollectionDataSource(tsReportDtoList);
+            parameters.put("COLLECTION_LIST", dataSource);
+
             try (InputStream stream = getClass().getResourceAsStream(REPORTS_PATH + report)) {
                 return new ByteArrayInputStream(JasperRunManager
                         .runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
@@ -342,56 +378,52 @@ public class ShowShipmentView extends VerticalLayout {
 
         Button downloadButton = new Button(new Icon(VaadinIcon.DOWNLOAD_ALT));
         downloadButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        downloadButton.setText("Download Shipment Advice");
+        downloadButton.setText("Download");
 
         anchor.getElement().setAttribute("download", true);
         anchor.add(downloadButton);
         return anchor;
     }
 
-
-    private Map<String, Object> prepareParamsForShipmentAdvice(Shipment shipment) {
+    private Map<String, Object> prepareParamsForShipmentAdvice(Shipment shipment, ContactDetails contactDetails) {
         Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("ADVICE_DATE", getFormattedDate(LocalDate.now()));
+        paramMap.put("LOGO_URL", Util.imagePath);
+
+        paramMap.put("ADVICE_DATE", Util.formatDateTime(Util.GENERIC_DATE_PATTERN, LocalDate.now()));
         paramMap.put("BL_NO", shipment.getBlNo());
         paramMap.put("BOOKING_NO", shipment.getBooking().getBookingNo());
-        paramMap.put("INVOICE_NO", shipment.getInvoiceNo());
-        paramMap.put("STUFFING_DATE", shipment.getBooking().getStuffingDate().format(DateTimeFormatter.ofPattern("dd-MMM-yyyy")));
+        paramMap.put("SHIPPER_INVOICE_NO", shipment.getInvoiceNo());
+
+        paramMap.put("STUFFING_DATE", Util.formatDateTime(Util.GENERIC_DATE_PATTERN, shipment.getBooking().getStuffingDate()));
+        paramMap.put("STUFFING_DEPOT", shipment.getBooking().getStuffingDepot());
         paramMap.put("SHIPPER_NAME", shipment.getShipper().getName());
         paramMap.put("CONSIGNEE", shipment.getNotifyParty().getName());
-        paramMap.put("CONTAINER", shipment.getBooking().getNumOfContainers() + "x"
-                + shipment.getBooking().getContainerSize().getContainerSize());
+
+        paramMap.put("NUM_OF_CONTAINER", shipment.getBooking().getNumOfContainers() + "x" +
+                shipment.getBooking().getContainerSize().getContainerSize());
         paramMap.put("COMMODITY", shipment.getCommodity().getName());
         paramMap.put("QUANTITY", calculateQuantity(shipment.getBooking()));
         paramMap.put("GROSS_WEIGHT", calculateWeight(shipment.getBooking()));
-        paramMap.put("LOGO_URL", Util.imagePath);
+
         paramMap.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortShortCode());
         paramMap.put("MV_CONNECT_PORT", shipment.getSchedule().getMotherVesselPort().getPortShortCode());
-        paramMap.put("TS_PORT", shipment.getSchedule().getTsPort().getPortName());
-        paramMap.put("DEST_PORT", shipment.getSchedule().getPortOfDestination().getPortName());
-        paramMap.put("POL_ETA", getFormattedDate(shipment.getSchedule().getLoadingPortEta()));
-        paramMap.put("POL_ETD", getFormattedDate(shipment.getSchedule().getLoadingPortEtd()));
-        paramMap.put("MV_PORT_FEEDER_ETA", getFormattedDate(shipment.getSchedule().getMvPortFeederEta()));
-        paramMap.put("MV_ETA", getFormattedDate(shipment.getSchedule().getMotherVesselPortEta()));
-        paramMap.put("TS_ETA", getFormattedDate(shipment.getSchedule().getTsPortEta()));
-        paramMap.put("DEST_ETA", getFormattedDate(shipment.getSchedule().getDestinationPortEta()));
-        paramMap.put("FEEDER", shipment.getSchedule().getFeederVesselName());
-        paramMap.put("MOTHER", shipment.getSchedule().getMotherVesselName());
+        paramMap.put("FEEDER", shipment.getSchedule().getPolVesselName());
 
-        //TS2 Addition
-        if (shipment.getSchedule().getTs2Port() != null) {
-            paramMap.put("TS2_PORT", shipment.getSchedule().getTs2Port().getPortName());
-            paramMap.put("TS2_ETA", getFormattedDate(shipment.getSchedule().getTs2PortEta()));
-            paramMap.put("TS_MOTHER", shipment.getSchedule().getTsVesselName());
-        }
+        paramMap.put("POL_ETA", Util.formatDateTime(Util.GENERIC_DATE_PATTERN, shipment.getSchedule().getLoadingPortEta()));
+        paramMap.put("POL_ETD", Util.formatDateTime(Util.GENERIC_DATE_PATTERN, shipment.getSchedule().getLoadingPortEtd()));
+        paramMap.put("MV_PORT_FEEDER_ETA", Util.formatDateTime(Util.GENERIC_DATE_PATTERN, shipment.getSchedule().getMvPortFeederEta()));
 
         paramMap.put("SEAL_NO", getSealNo(shipment.getBooking()));
         paramMap.put("CONTAINERS", getContainers(shipment.getBooking()));
 
+        paramMap.put("SIGNED_BY", contactDetails.getName());
+        paramMap.put("SIGNED_BY_EMAIL", contactDetails.getEmail());
+        paramMap.put("SIGNED_BY_CONTACT", contactDetails.getContactNo());
+
         return paramMap;
     }
 
-    private Object calculateWeight(Booking booking) {
+    private String calculateWeight(Booking booking) {
         if (booking.getContainer() == null || booking.getContainer().isEmpty()) {
             return "";
         }
@@ -399,7 +431,7 @@ public class ShowShipmentView extends VerticalLayout {
         for (FreightContainer container : booking.getContainer()) {
             grossWeight = grossWeight.add(container.getGrossWeight());
         }
-        return grossWeight + " KGS";
+        return Util.getFormattedBigDecimal(grossWeight) + " KGS";
     }
 
     private String calculateQuantity(Booking booking) {
@@ -439,10 +471,6 @@ public class ShowShipmentView extends VerticalLayout {
         return sealNo.toString();
     }
 
-    private String getFormattedDate(LocalDate date) {
-        return date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
-    }
-
     private Component createFilterHeader(String labelText, Consumer<String> filterChangeConsumer) {
         Label label = new Label(labelText);
         label.getStyle().set("padding-top", "var(--lumo-space-m)")
@@ -471,7 +499,6 @@ public class ShowShipmentView extends VerticalLayout {
         layout.getThemeList().add("spacing-xs");
         return layout;
     }
-
 
     private Dialog createEditDialog(Shipment shipment) {
 
@@ -566,6 +593,7 @@ public class ShowShipmentView extends VerticalLayout {
             shipment.setCreatedOn(LocalDateTime.now());
             shipment.setLastUpdated(LocalDateTime.now());
             shipment.setSchedule(scheduleComboBox.getValue());
+            shipment.setStatus(statusComboBox.getValue());
 
             shipment.getBooking().setBookingNo(bookingNo.getValue());
             shipment.getBooking().setContainerType(containerType.getValue());
@@ -575,11 +603,14 @@ public class ShowShipmentView extends VerticalLayout {
 
             try {
                 shipmentService.saveEditedShipment(shipment);
-                Util.getNotificationForSuccess("Shipment Saved Successfully!").open();
+                Util.getPopUpNotification("Shipment Saved Successfully!", 2500,
+                        NotificationVariant.LUMO_SUCCESS).open();
+                grid.setItems(shipmentService.getAllShipments());
                 dialog.close();
             } catch (Exception e) {
-                //e.printStackTrace();
-                Util.getNotificationForError("Unexpected Error: " + e.getMessage()).open();
+                e.printStackTrace();
+                Util.getPopUpNotification("Unexpected Error: " + e.getMessage(), 3500,
+                        NotificationVariant.LUMO_ERROR).open();
             }
         });
 
@@ -615,26 +646,26 @@ public class ShowShipmentView extends VerticalLayout {
                 masterBl = inputStream.readAllBytes();
 
             } catch (IOException e) {
-                //e.printStackTrace();
-                Util.getNotificationForError("Error: " + e.getMessage()).open();
+                e.printStackTrace();
+                Util.getPopUpNotification("Error: " + e.getMessage(), 3500, NotificationVariant.LUMO_ERROR).open();
             }
         });
 
         upload.addFileRejectedListener(event -> {
             String errorMessage = event.getErrorMessage();
-            Util.getNotificationForError(errorMessage).open();
+            Util.getPopUpNotification(errorMessage, 3500, NotificationVariant.LUMO_ERROR).open();
         });
         upload.setUploadButton(new Button("Upload MB/L"));
         return upload;
     }
 
-    public Dialog createBookingEditorDialog(Shipment shipment) {
+    public Dialog addContainerDetailsDialog(Shipment shipment) {
         Dialog dialog = new Dialog();
 
         Booking booking = shipment.getBooking();
         Set<FreightContainer> containerList = booking.getContainer();
 
-        H2 title = new H2("Create Booking");
+        H2 title = new H2("Add Container Details");
 
         TextField bookingNo = new TextField("Booking No");
         bookingNo.setValue(booking.getBookingNo());
@@ -679,35 +710,88 @@ public class ShowShipmentView extends VerticalLayout {
         containerGrid.addColumn(FreightContainer::getGrossWeight).setHeader("Gross Weight");
         containerGrid.addColumn(FreightContainer::getNoOfPackages).setHeader("Packages");
         containerGrid.addColumn(FreightContainer::getPackageUnit).setHeader("Packaging Unit");
-        containerGrid.addComponentColumn(freightContainer ->
-                new Button(new Icon(VaadinIcon.TRASH), event -> {
-                    containerList.remove(freightContainer);
-                    containerGrid.setVisible(!containerList.isEmpty());
-                    containerGrid.setItems(containerList);
-                }));
+        containerGrid.addComponentColumn(freightContainer -> {
+            Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
+            deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            deleteButton.addClickListener(event -> {
+                containerList.remove(freightContainer);
+                containerGrid.setVisible(!containerList.isEmpty());
+                containerGrid.setItems(containerList);
+            });
+            return deleteButton;
+        });
         containerGrid.setMaxHeight(20, Unit.EM);
         containerGrid.setVisible(!containerList.isEmpty());
         containerGrid.setItems(containerList);
 
+        Label totalContainers = new Label();
+        totalContainers.setVisible(!containerList.isEmpty());
+        totalContainers.setText("( " + containerList.size() + " Containers Added)");
+
+
         TextField containerNo = new TextField("Container No.");
         TextField sealNo = new TextField("Seal No.");
+
+        TextArea bulkContainerNo = new TextArea("Enter All Containers (Separated by ',' or '|' or line break)");
+        bulkContainerNo.setVisible(false);
+        TextArea bulkSealNo = new TextArea("Enter All Seal Nos. (Separated by ',' or '|' or line break)");
+        bulkSealNo.setVisible(false);
+
+        Checkbox bulkEntryCheckBox = new Checkbox("Bulk Entry Container Info ?");
+        bulkEntryCheckBox.setValue(false);
+        bulkEntryCheckBox.addValueChangeListener(e -> {
+            boolean isBulkEntry = e.getValue();
+            containerNo.setVisible(!isBulkEntry);
+            sealNo.setVisible(!isBulkEntry);
+            bulkContainerNo.setVisible(isBulkEntry);
+            bulkSealNo.setVisible(isBulkEntry);
+        });
+
         BigDecimalField grossWeight = new BigDecimalField("Gross Weight");
         IntegerField noOfPackages = new IntegerField("No Packages");
         ComboBox<PackageUnit> packageUnitComboBox = new ComboBox<>("Package Unit");
         packageUnitComboBox.setItems(PackageUnit.values());
+
         addButton.setMaxWidth(1, Unit.EM);
         addButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
         addButton.addClickListener(event -> {
-            FreightContainer container = new FreightContainer();
-            container.setBooking(booking);
-            container.setContainerNo(containerNo.getValue());
-            container.setSealNo(sealNo.getValue());
-            container.setNoOfPackages(noOfPackages.getValue());
-            container.setGrossWeight(grossWeight.getValue());
-            container.setPackageUnit(packageUnitComboBox.getValue());
-            containerList.add(container);
+            if (bulkEntryCheckBox.getValue()) {
+                if (bulkContainerNo.getValue() == null || bulkContainerNo.getValue().isEmpty()
+                        || bulkSealNo.getValue() == null || bulkSealNo.getValue().isEmpty()) {
+                    Util.getPopUpNotification("Please provide Correct Data!", 3000,
+                            NotificationVariant.LUMO_ERROR).open();
+                    return;
+                }
+                List<ContainerDto> containerDtos = getContainerDtosFromBulkEntry(bulkContainerNo.getValue(), bulkSealNo.getValue());
+                containerList.addAll(containerDtos.stream().map(dto -> {
+                    FreightContainer freightContainer = new FreightContainer();
+                    freightContainer.setNoOfPackages(noOfPackages.getValue());
+                    freightContainer.setGrossWeight(grossWeight.getValue());
+                    freightContainer.setPackageUnit(packageUnitComboBox.getValue());
+
+                    freightContainer.setContainerNo(dto.getContainerNo());
+                    freightContainer.setSealNo(dto.getSealNo());
+                    return freightContainer;
+                }).collect(Collectors.toList()));
+            } else {
+                if (containerNo.getValue() == null || containerNo.getValue().isEmpty()
+                        || sealNo.getValue() == null || sealNo.getValue().isEmpty()) {
+                    Util.getPopUpNotification("Please provide Correct Data!", 3000,
+                            NotificationVariant.LUMO_ERROR).open();
+                    return;
+                }
+                FreightContainer container = new FreightContainer();
+                container.setContainerNo(containerNo.getValue());
+                container.setSealNo(sealNo.getValue());
+                container.setNoOfPackages(noOfPackages.getValue());
+                container.setGrossWeight(grossWeight.getValue());
+                container.setPackageUnit(packageUnitComboBox.getValue());
+                containerList.add(container);
+            }
             containerGrid.setVisible(true);
             containerGrid.setItems(containerList);
+            totalContainers.setVisible(!containerList.isEmpty());
+            totalContainers.setText("( " + containerList.size() + " Containers Added)");
         });
         addButton.setEnabled(bookingNo.getValue() != null && !bookingNo.getValue().isEmpty());
 
@@ -722,11 +806,20 @@ public class ShowShipmentView extends VerticalLayout {
             booking.setNumOfContainers(numOfCont.getValue());
             booking.setStuffingCostPerContainer(stuffingCost.getValue());
             booking.setContainerSize(containerSize.getValue());
-            containerList.forEach(container -> container.setBookingId(booking.getBookingId()));
             booking.setContainer(containerList);
             booking.setEnteredOn(LocalDateTime.now());
             bookingService.saveBooking(booking);
-            Util.getNotificationForSuccess("Booking Saved Successfully").open();
+
+            if (containerList.size() != booking.getNumOfContainers()) {
+                new ConfirmDialog("Data Mismatch Warning!",
+                        "Your Booking is SAVED. But Number of Containers Does Not Match With Entered Containers."
+                                + System.lineSeparator() + "Entered Container = " + containerList.size() + ", "
+                                + " Number of Containers = " + booking.getNumOfContainers(), "Ok",
+                        e -> getChildren().close()).open();
+
+            } else {
+                Util.getPopUpNotification("Booking Saved Successfully", 2500, NotificationVariant.LUMO_SUCCESS).open();
+            }
         });
 
         Hr line = new Hr();
@@ -735,28 +828,72 @@ public class ShowShipmentView extends VerticalLayout {
 
         FormLayout formLayout = new FormLayout();
         formLayout.add(bookingNo, invoiceNo, containerType, numOfCont, containerSize, stuffingDate, stuffingCost, stuffingDepot,
-                line, containerNo, sealNo, grossWeight, noOfPackages, packageUnitComboBox, addButton, containerGrid);
-        formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 3));
+                line, bulkEntryCheckBox, containerNo, sealNo, bulkContainerNo, bulkSealNo, grossWeight, noOfPackages,
+                packageUnitComboBox, addButton, totalContainers);
+        formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
         formLayout.setColspan(line, 4);
         formLayout.setColspan(containerGrid, 4);
-        dialog.add(title, formLayout);
+        dialog.add(title, formLayout, containerGrid);
         dialog.getFooter().add(saveButton);
         dialog.getFooter().add(new Button("Close", event -> dialog.close()));
         return dialog;
+    }
+
+    private List<ContainerDto> getContainerDtosFromBulkEntry(String containerNo, String sealNo) throws RuntimeException {
+        List<String> containerNos = getBulkEntryItemsAsListFromString(containerNo);
+        List<String> sealNos = getBulkEntryItemsAsListFromString(sealNo);
+        if (containerNos.isEmpty() || sealNos.isEmpty()) return new LinkedList<>();
+
+        int length = Integer.min(containerNos.size(), sealNos.size());
+        if (containerNos.size() != sealNos.size()) {
+            Util.getPopUpNotification("Number of Containers does not match number of seal no.", 3000,
+                    NotificationVariant.LUMO_CONTRAST).open();
+        }
+
+        List<ContainerDto> containerDtos = new LinkedList<>();
+        for (int i = 0; i < length; i++) {
+            containerDtos.add(new ContainerDto(containerNos.get(i), sealNos.get(i)));
+        }
+        return containerDtos;
+    }
+
+    private List<String> getBulkEntryItemsAsListFromString(String items) {
+        char LINE_BREAK = '\n', COMMA = ',', PIPE = '|';
+        List<String> itemList = new LinkedList<>();
+
+        StringBuilder entry = new StringBuilder();
+        for (char c : items.toCharArray()) {
+            if (c == LINE_BREAK || c == COMMA || c == PIPE) {
+                if (!entry.toString().trim().isEmpty()) {
+                    itemList.add(entry.toString().trim());
+                }
+                entry = new StringBuilder();
+                continue;
+            }
+            entry.append(c);
+        }
+        if (!entry.toString().trim().isEmpty()) {
+            itemList.add(entry.toString().trim());
+        }
+        return itemList;
     }
 
     public Dialog createScheduleEditorDialog(Shipment shipment) {
 
         Dialog dialog = new Dialog();
         Schedule schedule;
+        Set<Transshipment> transshipments;
         List<Port> portList = portService.getPorts();
+
 
         H3 pageTitle = new H3("Create Schedule");
         if (shipment.getSchedule() != null) {
             pageTitle = new H3("Edit Schedule");
             schedule = shipment.getSchedule();
+            transshipments = schedule.getTransshipment();
         } else {
             schedule = null;
+            transshipments = new HashSet<>();
         }
         FormLayout formLayout = new FormLayout();
         formLayout.setMaxWidth("100%");
@@ -777,41 +914,13 @@ public class ShowShipmentView extends VerticalLayout {
             }
         });
 
-
-        TextField motherVesselName = new TextField("Mother Vessel Name");
-        motherVesselName.setRequired(true);
-
-        ComboBox<Port> motherVesselPort = Util.getPortComboBoxByItemListAndTitle(portList, "Mother Vessel Port");
-        DatePicker motherVesselPortEta = new DatePicker("Mother Vessel Port ETA");
+        ComboBox<Port> motherVesselPort = Util.getPortComboBoxByItemListAndTitle(portList, "Mother Vessel Connect Port");
         DatePicker mvPortEta = new DatePicker("Feeder Connect ETA");
         motherVesselPort.setRequired(true);
-        motherVesselPortEta.setRequired(true);
         motherVesselPort.addValueChangeListener(event -> {
             if (event != null && event.getValue() != null) {
                 Port vesselPort = event.getValue();
-                motherVesselPortEta.setLabel("Mother ETA " + vesselPort.getPortShortCode());
-                mvPortEta.setLabel("Feeder ETA " + vesselPort.getPortShortCode());
-            }
-        });
-
-        ComboBox<Port> tsPort = Util.getPortComboBoxByItemListAndTitle(portList, "Transshipment Port");
-        DatePicker tsPortEta = new DatePicker(tsPort.getLabel() + " ETA");
-        tsPort.addValueChangeListener(event -> {
-            if (event != null && event.getValue() != null) {
-                Port vesselPort = event.getValue();
-                tsPortEta.setLabel("ETA " + vesselPort.getPortCity());
-            }
-        });
-
-        TextField ts2VesselName = new TextField("TS2 Vessel Name");
-        ComboBox<Port> ts2Port = Util.getPortComboBoxByItemListAndTitle(portList, "Transshipment 2 Port");
-        DatePicker ts2PortEta = new DatePicker(ts2Port.getLabel() + " ETA");
-        ts2Port.addValueChangeListener(event -> {
-            ts2VesselName.setRequired(false);
-            if (event != null && event.getValue() != null) {
-                Port vesselPort = event.getValue();
-                ts2VesselName.setRequired(true);
-                ts2PortEta.setLabel("ETA " + vesselPort.getPortCity());
+                mvPortEta.setLabel("Feeder ETA" + vesselPort.getPortShortCode());
             }
         });
 
@@ -826,77 +935,115 @@ public class ShowShipmentView extends VerticalLayout {
             }
         });
 
-        Button addButton = new Button("Add");
+        TextField transhipmentVessel = new TextField("Transhipment Vessel:");
+        ComboBox<Port> tsPort = Util.getPortComboBoxByItemListAndTitle(portList, "Transshipment Port");
+        DatePicker tsPortEta = new DatePicker(tsPort.getLabel() + " ETA");
+        tsPort.addValueChangeListener(event -> {
+            if (event != null && event.getValue() != null) {
+                Port vesselPort = event.getValue();
+                tsPortEta.setLabel("ETA " + vesselPort.getPortCity());
+            }
+        });
+
+        Grid<Transshipment> transshipmentGrid = new Grid<>();
+
+        transshipmentGrid.setItems(transshipments);
+        transshipmentGrid.addColumn(Transshipment::getVesselName).setHeader("Vessel");
+        transshipmentGrid.addColumn(ts -> ts.getPort().getPortName()).setHeader("Port");
+        transshipmentGrid.addColumn(ts -> Util.formatDateTime(Util.GENERIC_DATE_PATTERN, ts.getPortArrival())).setHeader("ETA");
+        transshipmentGrid.addComponentColumn(ts -> {
+            Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
+            deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            deleteButton.addClickListener(event -> {
+                transshipments.remove(ts);
+                transshipmentGrid.setVisible(!transshipments.isEmpty());
+                transshipmentGrid.setItems(transshipments);
+            });
+            return deleteButton;
+        }).setHeader("Delete");
+        transshipmentGrid.setMaxHeight(15, Unit.EM);
+        transshipmentGrid.setVisible(!transshipments.isEmpty());
+
+        Button addTsButton = new Button("Add", new Icon(VaadinIcon.PLUS));
+        addTsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        addTsButton.addClickListener(event -> {
+            if (tsPort.getValue() == null || tsPortEta.getValue() == null) {
+                Util.getPopUpNotification("Please fill up the values correctly!", 3500, NotificationVariant.LUMO_CONTRAST).open();
+                return;
+            }
+            Transshipment ts = new Transshipment();
+            ts.setPort(tsPort.getValue());
+            ts.setVesselName(transhipmentVessel.getValue());
+            ts.setPortArrival(tsPortEta.getValue());
+            transshipments.add(ts);
+            transshipmentGrid.setVisible(true);
+            transshipmentGrid.setItems(transshipments);
+        });
+
+
+        Button addButton = new Button("Add Schedule");
+        addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         if (schedule != null) {
-            feederVesselName.setValue(schedule.getFeederVesselName());
+            feederVesselName.setValue(schedule.getPolVesselName());
             portOfLoading.setValue(schedule.getPortOfLoading());
             polEta.setValue(schedule.getLoadingPortEta());
             polEtd.setValue(schedule.getLoadingPortEtd());
-            motherVesselName.setValue(schedule.getMotherVesselName());
             motherVesselPort.setValue(schedule.getMotherVesselPort());
             mvPortEta.setValue(schedule.getMvPortFeederEta());
-            motherVesselPortEta.setValue(schedule.getMotherVesselPortEta());
-            tsPort.setValue(schedule.getTsPort());
-            tsPortEta.setValue(schedule.getTsPortEta());
+            transshipmentGrid.setItems(schedule.getTransshipment());
             destinationPort.setValue(schedule.getPortOfDestination());
             destinationPortEta.setValue(schedule.getDestinationPortEta());
-            if (schedule.getTs2Port() != null) {
-                ts2VesselName.setValue(schedule.getTsVesselName());
-                ts2PortEta.setValue(schedule.getTs2PortEta());
-                ts2Port.setValue(schedule.getTs2Port());
-            }
             addButton.setText("Save");
         }
 
         addButton.addClickListener(e -> {
             Schedule newSchedule = Objects.requireNonNullElseGet(schedule, Schedule::new);
-            newSchedule.setFeederVesselName(feederVesselName.getValue());
+            newSchedule.setPolVesselName(feederVesselName.getValue());
             newSchedule.setPortOfLoading(portOfLoading.getValue());
             newSchedule.setLoadingPortEta(polEta.getValue());
             newSchedule.setLoadingPortEtd(polEtd.getValue());
+
             newSchedule.setMvPortFeederEta(mvPortEta.getValue());
-
-            newSchedule.setMotherVesselName(motherVesselName.getValue());
             newSchedule.setMotherVesselPort(motherVesselPort.getValue());
-            newSchedule.setMotherVesselPortEta(motherVesselPortEta.getValue());
-
-            newSchedule.setTsPort(tsPort.getValue());
-            newSchedule.setTsPortEta(tsPortEta.getValue());
 
             newSchedule.setPortOfDestination(destinationPort.getValue());
             newSchedule.setDestinationPortEta(destinationPortEta.getValue());
 
-            newSchedule.setTsVesselName(ts2VesselName.getValue());
-            newSchedule.setTs2Port(ts2Port.getValue());
-            newSchedule.setTs2PortEta(ts2PortEta.getValue());
+            newSchedule.setTransshipment(transshipments);
 
             Schedule editedSchedule = scheduleService.saveSchedule(newSchedule);
-
             shipment.setSchedule(editedSchedule);
             shipmentService.saveEditedShipment(shipment);
             if (schedule != null) {
-                Util.getNotificationForSuccess("Schedule Saved!").open();
+                Util.getPopUpNotification("Schedule Saved!", 2500, NotificationVariant.LUMO_SUCCESS).open();
             } else {
-                Util.getNotificationForSuccess("Schedule Saved!").open();
+                Util.getPopUpNotification("Schedule Saved!", 2500, NotificationVariant.LUMO_SUCCESS).open();
             }
         });
 
-        formLayout.add(feederVesselName, motherVesselName, portOfLoading, motherVesselPort, polEta, motherVesselPortEta,
-                polEtd, mvPortEta, tsPort, tsPortEta, ts2VesselName, new Hr(), ts2Port, ts2PortEta, destinationPort, destinationPortEta);
-        addButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        HorizontalLayout tsLayout = new HorizontalLayout();
+        tsLayout.setVerticalComponentAlignment(Alignment.END);
+        tsLayout.setAlignItems(Alignment.END);
+        tsLayout.add(transhipmentVessel, tsPort, tsPortEta, addTsButton);
+
+        formLayout.add(feederVesselName, portOfLoading, polEta, polEtd, motherVesselPort, mvPortEta,
+                destinationPort, destinationPortEta, transhipmentVessel, tsPort, tsPortEta, addTsButton);
         Button cancelButton = new Button("Close", e -> dialog.close());
 
-        dialog.add(pageTitle, formLayout);
+        formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
+
+        dialog.add(pageTitle, formLayout, transshipmentGrid);
         dialog.getFooter().add(cancelButton);
         dialog.getFooter().add(addButton);
-        dialog.setMaxWidth("50%");
+        dialog.setMaxWidth("75%");
         return dialog;
     }
 
     public Dialog createInvoiceMakerDialog(Shipment shipment) {
 
         Invoice invoice = shipment.getInvoice();
+        Set<InvoiceItem> invoiceItems = invoice.getInvoiceItems();
 
         Dialog dialog = new Dialog();
         HorizontalLayout horizontalLayout = new HorizontalLayout();
@@ -916,63 +1063,90 @@ public class ShowShipmentView extends VerticalLayout {
         DatePicker expDate = new DatePicker("Exp Date");
         expDate.setValue(invoice.getExpDate());
 
+        ComboBox<AmountCurrency> foreignCurrComboBox = new ComboBox<>("Carrier Currency");
+        foreignCurrComboBox.setItems(AmountCurrency.values());
+        foreignCurrComboBox.setItemLabelGenerator(curr -> curr.toString() + " - " + curr.getCurrencyName());
+        foreignCurrComboBox.setValue(invoice.getForeignCurrency());
+
+        ComboBox<AmountCurrency> localCurrencyComboBox = new ComboBox<>("Local Currency");
+        localCurrencyComboBox.setItems(AmountCurrency.values());
+        localCurrencyComboBox.setItemLabelGenerator(curr -> curr.toString() + " - " + curr.getCurrencyName());
+        localCurrencyComboBox.setValue(invoice.getLocalCurrency());
+
         Text inWords = new Text("Zero");
-        inWords.setText(Util.getAmountInWords(invoice.getSubTotal()));
+        inWords.setText(addSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+                Util.getAmountInWords(invoice.getGrandTotal())));
 
         BigDecimalField total = new BigDecimalField("Total", BigDecimal.ZERO, "");
-        total.setValue(invoice.getSubTotal() == null ? BigDecimal.ZERO : invoice.getSubTotal());
+        total.setValue(invoice.getGrandTotal() == null ? BigDecimal.ZERO : invoice.getGrandTotal());
         total.setReadOnly(true);
 
-        BigDecimalField freightInBDT = new BigDecimalField("Freight in BDT", "");
-        freightInBDT.setValue(invoice.getFreightTotalInLocalCurr() == null ? BigDecimal.ZERO : invoice.getFreightTotalInLocalCurr());
-        freightInBDT.setReadOnly(true);
-
-        BigDecimalField totalFreight = new BigDecimalField("Total Freight", "");
-        totalFreight.setValue(invoice.getTotalFreight() == null ? BigDecimal.ZERO : invoice.getTotalFreight());
-        totalFreight.setReadOnly(true);
-
-        BigDecimalField ratePerContField = new BigDecimalField("Rate Per Container", "");
-        ratePerContField.setValue(invoice.getRatePerContainer() == null ? BigDecimal.ZERO : invoice.getRatePerContainer());
-        ratePerContField.setValueChangeMode(ValueChangeMode.EAGER);
-
         BigDecimalField conversionRate = new BigDecimalField("Conversion Rate", "");
-        conversionRate.setValue(invoice.getConversionRate() == null ? BigDecimal.ZERO : invoice.getConversionRate());
+        conversionRate.setValue(invoice.getConversionRate() == null ? BigDecimal.ONE : invoice.getConversionRate());
 
-        ComboBox<AmountCurrency> currComboBox = new ComboBox<>("Currency");
-        currComboBox.setItems(AmountCurrency.values());
-        currComboBox.setItemLabelGenerator(curr -> curr.toString() + " - " + curr.getCurrencyName());
-        currComboBox.setValue(invoice.getCurrency());
+        TextField description = new TextField("Description");
+        BigDecimalField rate = new BigDecimalField("Rate Per Product");
+        IntegerField quantity = new IntegerField("Quantity");
+        TextField itemUnit = new TextField("Unit");
+        BigDecimalField itemTotalInLocalCurr = new BigDecimalField("Sub Total");
+        Checkbox foreignCurrency = new Checkbox("Foreign Currency ?");
 
-        TextField goodDescription = new TextField("Goods Description");
-        goodDescription.setValue(Objects.requireNonNullElse(invoice.getGoodsDescription(), ""));
+        rate.setValueChangeMode(ValueChangeMode.ON_BLUR);
+        conversionRate.setValueChangeMode(ValueChangeMode.ON_BLUR);
+        quantity.setValueChangeMode(ValueChangeMode.EAGER);
 
-        TextField otherField1 = new TextField("Other Cost Name 1:");
-        otherField1.setValue(Objects.requireNonNullElse(invoice.getOtherDesc1(), ""));
+        rate.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue()))
+        );
+        quantity.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue()))
+        );
+        foreignCurrency.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue()))
+        );
+        conversionRate.addValueChangeListener(e -> itemTotalInLocalCurr.setValue(
+                calculateItemTotal(rate.getValue(), quantity.getValue(), foreignCurrency.getValue(), conversionRate.getValue())));
 
-        BigDecimalField otherCost1Amt = new BigDecimalField("Other Cost 1 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost1Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost1Amt.setValue(invoice.getOther1Amt() == null ? BigDecimal.ZERO : invoice.getOther1Amt());
+//        Checkbox includeContainers = new Checkbox("Include Containers ?");
 
-        TextField otherField2 = new TextField("Other Cost Name 2:");
-        otherField2.setValue(Objects.requireNonNullElse(invoice.getOtherDesc2(), ""));
+        Grid<InvoiceItem> invoiceItemGrid = new Grid<>();
 
-        BigDecimalField otherCost2Amt = new BigDecimalField("Other Cost 2 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost2Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost2Amt.setValue(invoice.getOther2Amt() == null ? BigDecimal.ZERO : invoice.getOther2Amt());
+        invoiceItemGrid.setItems(invoiceItems);
+        invoiceItemGrid.addColumn(InvoiceItem::getDescription).setHeader("Description");
+        invoiceItemGrid.addColumn(InvoiceItem::getRate).setHeader("Rate");
+        invoiceItemGrid.addColumn(InvoiceItem::getQuantity).setHeader("Quantity");
+        invoiceItemGrid.addColumn(InvoiceItem::getItemUnit).setHeader("Unit");
+        Grid.Column<InvoiceItem> foreignCurrTotal = invoiceItemGrid.addColumn(InvoiceItem::getTotalInForeignCurr)
+                .setHeader(getTotalColumnName(foreignCurrComboBox.getValue()));
+        Grid.Column<InvoiceItem> localCurrTotal = invoiceItemGrid.addColumn(InvoiceItem::getTotalInLocalCurr)
+                .setHeader(getTotalColumnName(localCurrencyComboBox.getValue()));
+        invoiceItemGrid.addComponentColumn(invoiceItem -> {
+            Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
+            deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            deleteButton.addClickListener(event -> {
+                invoiceItems.remove(invoiceItem);
+                invoiceItemGrid.setVisible(!invoiceItems.isEmpty());
+                invoiceItemGrid.setItems(invoiceItems);
+                total.setValue(invoiceItems.stream()
+                        .map(InvoiceItem::getTotalInLocalCurr)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add));
+                inWords.setText(addSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+                        Util.getAmountInWords(total.getValue())));
+            });
+            return deleteButton;
+        });
+        invoiceItemGrid.setMaxHeight(17, Unit.EM);
+        invoiceItemGrid.setVisible(!invoiceItems.isEmpty());
+        invoiceItemGrid.setItems(invoiceItems);
 
-        TextField otherField3 = new TextField("Other Cost Name 3:");
-        otherField3.setValue(Objects.requireNonNullElse(invoice.getOtherDesc3(), ""));
-
-        BigDecimalField otherCost3Amt = new BigDecimalField("Other Cost 3 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost3Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost3Amt.setValue(invoice.getOther3Amt() == null ? BigDecimal.ZERO : invoice.getOther3Amt());
-
-        TextField otherField4 = new TextField("Other Cost Name 4:");
-        otherField4.setValue(Objects.requireNonNullElse(invoice.getOtherDesc4(), ""));
-
-        BigDecimalField otherCost4Amt = new BigDecimalField("Other Cost 4 Amount:", BigDecimal.ZERO, "Cannot be Empty");
-        otherCost4Amt.setValueChangeMode(ValueChangeMode.EAGER);
-        otherCost4Amt.setValue(invoice.getOther4Amt() == null ? BigDecimal.ZERO : invoice.getOther4Amt());
+        foreignCurrComboBox.addValueChangeListener(event -> {
+            foreignCurrTotal.setHeader(getTotalColumnName(event.getValue()));
+            conversionRate.setValue(BigDecimal.ONE);
+        });
+        localCurrencyComboBox.addValueChangeListener(event -> {
+            localCurrTotal.setHeader(getTotalColumnName(event.getValue()));
+            conversionRate.setValue(BigDecimal.ONE);
+        });
 
         ComboBox<BankDetails> bankDetailsComboBox = new ComboBox<>("Choose Bank Details");
         bankDetailsComboBox.setItems(bankDetailsService.getAllBankDetails());
@@ -985,160 +1159,97 @@ public class ShowShipmentView extends VerticalLayout {
         contactDetailsComboBox.setItemLabelGenerator(ContactDetails::getName);
         contactDetailsComboBox.setValue(invoice.getContactDetails());
 
-        otherCost1Amt.addValueChangeListener(e -> {
-                    if (otherCost1Amt.getValue() == null) {
-                        otherCost1Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(Util.getAmountInWords(total.getValue()));
-                }
-        );
-        otherCost2Amt.addValueChangeListener(e -> {
-                    if (otherCost2Amt.getValue() == null) {
-                        otherCost2Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(Util.getAmountInWords(total.getValue()));
-                }
-        );
-        otherCost3Amt.addValueChangeListener(e -> {
-                    if (otherCost3Amt.getValue() == null) {
-                        otherCost3Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(Util.getAmountInWords(total.getValue()));
-                }
-        );
-        otherCost4Amt.addValueChangeListener(e -> {
-                    if (otherCost4Amt.getValue() == null) {
-                        otherCost4Amt.setValue(BigDecimal.ZERO);
-                    }
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue())
-                            .add(otherCost2Amt.getValue()).add(otherCost3Amt.getValue()).add(otherCost4Amt.getValue()));
-                    inWords.setText(Util.getAmountInWords(total.getValue()));
-                }
-        );
-        ratePerContField.addValueChangeListener(e -> {
-                    totalFreight.setValue(e.getValue()
-                            .multiply(BigDecimal.valueOf(numOfContainer.getValue())));
-                    freightInBDT.setValue(totalFreight.getValue().multiply(conversionRate.getValue()));
-                    total.setValue(freightInBDT.getValue().add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue())
-                            .add(otherCost1Amt.getValue()).add(otherCost2Amt.getValue()));
-                    inWords.setText(Util.getAmountInWords(total.getValue()));
-                }
-        );
 
         Button saveInvoiceButton = new Button("Save Invoice", new Icon(VaadinIcon.DATABASE));
         saveInvoiceButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         saveInvoiceButton.addClickListener(event -> {
-            invoice.setFreightTotalInLocalCurr(freightInBDT.getValue());
-            invoice.setSubTotal(total.getValue());
+            invoice.setGrandTotal(total.getValue());
             invoice.setExpNo(expNo.getValue());
             invoice.setExpDate(expDate.getValue());
-            invoice.setRatePerContainer(ratePerContField.getValue());
-            invoice.setTotalFreight(totalFreight.getValue());
             invoice.setConversionRate(conversionRate.getValue());
-            invoice.setCurrency(currComboBox.getValue());
-            invoice.setGoodsDescription(goodDescription.getValue());
-
-            invoice.setOtherDesc1(otherField1.getValue());
-            invoice.setOther1Amt(otherCost1Amt.getValue());
-            invoice.setOtherDesc2(otherField2.getValue());
-            invoice.setOther2Amt(otherCost2Amt.getValue());
-            invoice.setOtherDesc3(otherField3.getValue());
-            invoice.setOther3Amt(otherCost3Amt.getValue());
-            invoice.setOtherDesc4(otherField4.getValue());
-            invoice.setOther4Amt(otherCost4Amt.getValue());
-
+            invoice.setForeignCurrency(foreignCurrComboBox.getValue());
+            invoice.setLocalCurrency(localCurrencyComboBox.getValue());
             invoice.setBankDetails(bankDetailsComboBox.getValue());
             invoice.setContactDetails(contactDetailsComboBox.getValue());
-            invoiceService.saveInvoice(invoice);
-            Util.getNotificationForSuccess("Saved Successfully").open();
+
+            try {
+                invoice.setInvoiceItems(invoiceItems);
+                invoiceItemsService.saveInvoiceItems(invoiceItems);
+                invoiceService.saveInvoice(invoice);
+                Util.getPopUpNotification("Saved Successfully", 2500, NotificationVariant.LUMO_SUCCESS).open();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Util.getPopUpNotification("Error!", 3500, NotificationVariant.LUMO_ERROR).open();
+            }
+
         });
+
+        Button createDetailsButton = new Button("Add", new Icon(VaadinIcon.PLUS));
+        createDetailsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        createDetailsButton.addClickListener(event -> {
+            try {
+                InvoiceItem invoiceItem = new InvoiceItem();
+                invoiceItem.setInvoice(invoice);
+                invoiceItem.setRate(rate.getValue());
+                invoiceItem.setQuantity(quantity.getValue());
+                invoiceItem.setDescription(description.getValue());
+                invoiceItem.setItemUnit(itemUnit.getValue());
+                invoiceItem.setForeignCurr(foreignCurrency.getValue());
+
+                invoiceItem.setCurrency(foreignCurrency.getValue() ?
+                        foreignCurrComboBox.getValue().toString() : localCurrencyComboBox.getValue().toString());
+                invoiceItem.setTotalInForeignCurr(
+                        calculateItemTotal(rate.getValue(), quantity.getValue(), false, BigDecimal.ONE));
+
+                invoiceItem.setTotalInLocalCurr(itemTotalInLocalCurr.getValue());
+
+                invoiceItems.add(invoiceItem);
+                invoiceItemGrid.setItems(invoiceItems);
+                invoiceItemGrid.setVisible(true);
+                total.setValue(invoiceItems.stream()
+                        .map(InvoiceItem::getTotalInLocalCurr)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add));
+                inWords.setText(addSuffixToWordAmountByCurrency(localCurrencyComboBox.getValue(),
+                        Util.getAmountInWords(total.getValue())));
+            } catch (Exception e) {
+                Util.getPopUpNotification("Error Occurred", 2500, NotificationVariant.LUMO_SUCCESS).open();
+                e.printStackTrace();
+            }
+        });
+
+        HorizontalLayout invoiceItemSubLayout = new HorizontalLayout();
+        invoiceItemSubLayout.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        invoiceItemSubLayout.add(foreignCurrency, createDetailsButton);
 
         Button prepareInvoiceButton = new Button("Download Invoice", new Icon(VaadinIcon.DOWNLOAD));
         prepareInvoiceButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        Anchor anchor = new Anchor(new StreamResource("Invoice" + shipment.getBlNo() + ".pdf", (InputStreamFactory) () -> {
-            final Map<String, Object> parameters = new HashMap<>();
+        Anchor anchor = new Anchor(new StreamResource("Invoice-" + shipment.getBlNo() + ".pdf", (InputStreamFactory) () -> {
 
-            String reportName = "Invoice.jasper";
+            List<InvoiceItemDto> invoiceItemDtos = new LinkedList<>();
+            invoiceItemDtos.add(new InvoiceItemDto()); // প্রথম খালি ভ্যালুটি MASTER_REPORT এর জন্য
+            invoiceItemDtos.addAll(invoice.getInvoiceItems().stream()
+                    .sorted(Comparator.comparing(InvoiceItem::getTotalInLocalCurr).reversed())
+                    .map(InvoiceItemDto::new)
+                    .collect(Collectors.toList()));
 
-            parameters.put("BL_NO", shipment.getBlNo());
-            parameters.put("ADDRESS", shipment.getShipper().getAddress());
-            parameters.put("INVOICE_NO", shipment.getInvoice().getInvoiceNo());
-            parameters.put("SHIPPER_NAME", shipment.getShipper().getName());
-            parameters.put("CONTAINER", numOfContainer.getValue() + "x" + shipment.getBooking().getContainerSize().getContainerSize());
-            parameters.put("COMMODITY", shipment.getCommodity().getName());
-            parameters.put("CONTAINERS", getContainers(shipment.getBooking()));
-            parameters.put("INVOICE_DATE", getFormattedDate(LocalDate.now()));
-            parameters.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortName() + ", "
-                    + shipment.getSchedule().getPortOfLoading().getPortCountry());
-            parameters.put("DEST_PORT", shipment.getSchedule().getPortOfDestination().getPortName() + ", "
-                    + shipment.getSchedule().getPortOfDestination().getPortCountry());
-            parameters.put("POL_ETD", getFormattedDate(shipment.getSchedule().getLoadingPortEta()));
-            parameters.put("DEST_ETA", getFormattedDate(shipment.getSchedule().getDestinationPortEta()));
-            parameters.put("SHIPPER_EMAIL", shipment.getShipper().getEmail());
-            parameters.put("LOGO_URL", Util.imagePath);
-            parameters.put("SHIPPER_INV_NO", shipment.getInvoiceNo());
-            parameters.put("FREIGHT_CURRENCY", currComboBox.getValue().toString());
-
-            parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(conversionRate.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("FREIGHT_RATE", Util.getFormattedBigDecimal(ratePerContField.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("TOTAL_FREIGHT", Util.getFormattedBigDecimal(totalFreight.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("FREIGHT_LOCAL", Util.getFormattedBigDecimal(freightInBDT.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("GOODS_DESCRIPTION", goodDescription.getValue());
-            parameters.put("DESC_2", otherField1.getValue());
-            parameters.put("DESC_2_AMT", Util.getFormattedBigDecimal(otherCost1Amt.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-            parameters.put("DESC_3", otherField2.getValue());
-            parameters.put("DESC_3_AMT", Util.getFormattedBigDecimal(otherCost2Amt.getValue()
-                    .setScale(2, RoundingMode.UNNECESSARY)));
-
-            if (otherField3.getValue() != null && !otherField3.getValue().isEmpty()) {
-                reportName = "Invoice_row_3.jasper";
-                parameters.put("DESC_4", otherField3.getValue());
-                parameters.put("DESC_4_AMT", Util.getFormattedBigDecimal(otherCost3Amt.getValue()
-                        .setScale(2, RoundingMode.UNNECESSARY)));
-            }
-            if (otherField4.getValue() != null && !otherField4.getValue().isEmpty()) {
-                reportName = "Invoice_row_4.jasper";
-                parameters.put("DESC_5", otherField4.getValue());
-                parameters.put("DESC_5_AMT", Util.getFormattedBigDecimal(otherCost4Amt.getValue()
-                        .setScale(2, RoundingMode.UNNECESSARY)));
+            for (int i = 0; i < invoiceItemDtos.size(); i++) {
+                invoiceItemDtos.get(i).setSlNo(i);
             }
 
-            parameters.put("TOTAL", Util.getFormattedBigDecimal(total.getValue().setScale(2,
-                    RoundingMode.UNNECESSARY)));
-            parameters.put("TOTAL_IN_WORD", inWords.getText());
-            parameters.put("BANK_NAME", bankDetailsComboBox.getValue().getBankName());
-            parameters.put("AC_NAME", bankDetailsComboBox.getValue().getAccName());
-            parameters.put("AC_NO", bankDetailsComboBox.getValue().getAccNo());
-            parameters.put("ROUTING_NO", bankDetailsComboBox.getValue().getRoutingNo());
-            parameters.put("BRANCH", bankDetailsComboBox.getValue().getBranchName());
-            parameters.put("SIGNED_BY", contactDetailsComboBox.getValue().getName());
-            parameters.put("SIGNED_BY_EMAIL", contactDetailsComboBox.getValue().getEmail());
-            parameters.put("SIGNED_BY_CONTACT", contactDetailsComboBox.getValue().getContactNo());
-            parameters.put("EXP_NO", expNo.getValue());
-            parameters.put("EXP_DATE", getFormattedDate(expDate.getValue()));
-            parameters.put("VESSEL", shipment.getSchedule().getFeederVesselName());
+            String reportName = "invoice.jasper";
 
+            final Map<String, Object> parameters = getInvoiceReportParam(shipment);
+            JRDataSource dataSource = new JRBeanCollectionDataSource(invoiceItemDtos);
+            parameters.put("COLLECTION_LIST", dataSource);
 
             try (InputStream stream = getClass().getResourceAsStream((REPORTS_PATH + reportName))) {
-                return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, new JREmptyDataSource(1)));
+                return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters, dataSource));
             } catch (JRException | IOException e) {
                 throw new RuntimeException(e);
             }
         }), "");
         anchor.getElement().setAttribute("download", true);
         anchor.add(prepareInvoiceButton);
-
 
         Hr line1 = new Hr();
         Hr line2 = new Hr();
@@ -1158,13 +1269,12 @@ public class ShowShipmentView extends VerticalLayout {
 
         horizontalLayout.add(inWords);
         FormLayout invoiceForm = new FormLayout();
-        invoiceForm.add(currComboBox, conversionRate, expNo, expDate, gap0, line1, goodDescription, numOfContainer,
-                ratePerContField, totalFreight, freightInBDT, otherField1, gap1, otherCost1Amt, otherField2, gap2,
-                otherCost2Amt, otherField3, gap3, otherCost3Amt, otherField4, gap4, otherCost4Amt, line3,
+        invoiceForm.add(foreignCurrComboBox, localCurrencyComboBox, conversionRate, expNo, expDate, gap0, line1, gap0,
+                description, rate, quantity, itemUnit, itemTotalInLocalCurr, invoiceItemSubLayout,
+                invoiceItemGrid,
                 horizontalLayout, gap5, total);
 
-        invoiceForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 5));
-        //invoiceForm.setColspan(gap0, 1);
+        invoiceForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 6));
         invoiceForm.setColspan(line1, 5);
         invoiceForm.setColspan(line2, 5);
         invoiceForm.setColspan(gap1, 3);
@@ -1174,6 +1284,7 @@ public class ShowShipmentView extends VerticalLayout {
         invoiceForm.setColspan(gap4, 3);
         invoiceForm.setColspan(gap5, 2);
         invoiceForm.setColspan(horizontalLayout, 2);
+        invoiceForm.setColspan(invoiceItemGrid, 6);
 
         FormLayout contactForm = new FormLayout();
         contactForm.add(bankDetailsComboBox, contactDetailsComboBox);
@@ -1189,6 +1300,93 @@ public class ShowShipmentView extends VerticalLayout {
         dialog.getFooter().add(anchor);
 
         return dialog;
+    }
+
+    private Map<String, Object> getInvoiceReportParam(Shipment shipment) {
+
+        final Map<String, Object> parameters = new HashMap<>();
+
+        Invoice invoice = shipment.getInvoice();
+
+        parameters.put("LOGO_URL", Util.imagePath);
+
+        parameters.put("INVOICE_NO", invoice.getInvoiceNo());
+        parameters.put("INVOICE_DATE", Util.formatDateTime(Util.GENERIC_DATE_PATTERN, LocalDate.now()));
+
+        parameters.put("SHIPPER_NAME", shipment.getShipper().getName());
+        parameters.put("BL_NO", shipment.getBlNo());
+
+        parameters.put("ADDRESS", shipment.getShipper().getAddress());
+        parameters.put("VESSEL", shipment.getSchedule().getPolVesselName());
+
+        parameters.put("SHIPPER_EMAIL", shipment.getShipper().getEmail());
+        parameters.put("POL_ETD", Util.formatDateTime(Util.GENERIC_DATE_PATTERN, shipment.getSchedule().getLoadingPortEta()));
+
+        parameters.put("COMMODITY", shipment.getCommodity().getName());
+        parameters.put("DEST_ETA", Util.formatDateTime(Util.GENERIC_DATE_PATTERN, shipment.getSchedule().getDestinationPortEta()));
+
+        parameters.put("PORT_OF_LOADING", shipment.getSchedule().getPortOfLoading().getPortName() + ", "
+                + shipment.getSchedule().getPortOfLoading().getPortCountry());
+        parameters.put("DEST_PORT", shipment.getSchedule().getPortOfDestination().getPortName() + ", "
+                + shipment.getSchedule().getPortOfDestination().getPortCountry());
+
+        int numOfContainers = shipment.getBooking().getNumOfContainers();
+        if (numOfContainers > 9) {
+            parameters.put("CONTAINERS", numOfContainers + "x" +
+                    shipment.getBooking().getContainerSize().getContainerSize());
+        } else {
+            parameters.put("CONTAINERS", getContainers(shipment.getBooking()));
+        }
+        parameters.put("SHIPPER_INV_NO", shipment.getInvoiceNo());
+
+        parameters.put("EXP_NO", invoice.getExpNo());
+        parameters.put("EXP_DATE", Util.formatDateTime("dd-MM-yyyy", invoice.getExpDate()));
+
+        parameters.put("FOREIGN_CURRENCY", invoice.getForeignCurrency().toString());
+        parameters.put("LOCAL_CURRENCY", invoice.getLocalCurrency().toString());
+        parameters.put("CONVERSION_RATE", Util.getFormattedBigDecimal(invoice.getConversionRate().setScale(2, RoundingMode.UNNECESSARY)));
+
+        BigDecimal grandTotal = invoice.getInvoiceItems().stream().map(InvoiceItem::getTotalInLocalCurr).reduce(BigDecimal.ZERO, BigDecimal::add);
+        parameters.put("TOTAL", Util.getFormattedBigDecimal(grandTotal.setScale(1, RoundingMode.UNNECESSARY)));
+        parameters.put("TOTAL_IN_WORD",
+                addSuffixToWordAmountByCurrency(invoice.getLocalCurrency(), Util.getAmountInWords(grandTotal)));
+
+        BankDetails bankDetails = invoice.getBankDetails();
+        parameters.put("BANK_NAME", bankDetails.getBankName());
+        parameters.put("AC_NAME", bankDetails.getAccName());
+        parameters.put("AC_NO", bankDetails.getAccNo());
+        parameters.put("ROUTING_NO", bankDetails.getRoutingNo());
+        parameters.put("BRANCH", bankDetails.getBranchName());
+
+        ContactDetails contactDetails = invoice.getContactDetails();
+        parameters.put("SIGNED_BY", contactDetails.getName());
+        parameters.put("SIGNED_BY_EMAIL", contactDetails.getEmail());
+        parameters.put("SIGNED_BY_CONTACT", contactDetails.getContactNo());
+
+        return parameters;
+    }
+
+    private String getTotalColumnName(AmountCurrency currency) {
+        if (currency == null) {
+            return "Total";
+        }
+        return "Total in " + currency;
+    }
+
+    private BigDecimal calculateItemTotal(BigDecimal rate, Integer quantity, Boolean isForeignCurr, BigDecimal convRate) {
+        if (rate == null || quantity == null || convRate == null) {
+            System.out.println("NULL FOUND IN CALCULATION");
+            return BigDecimal.ZERO;
+        }
+        BigDecimal conversionRate = isForeignCurr ? convRate : BigDecimal.ONE;
+        return rate.multiply(new BigDecimal(quantity)).multiply(conversionRate);
+    }
+
+    private String addSuffixToWordAmountByCurrency(AmountCurrency currency, String amount) {
+        if (currency == null) {
+            currency = AmountCurrency.BDT;
+        }
+        return amount + " " + currency.getCurrencyName() + " Only";
     }
 
     private static Button getConfirmDialogButton(Dialog dialog) {

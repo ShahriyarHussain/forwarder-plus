@@ -4,6 +4,7 @@ import com.unison.ratemaster.Entity.Booking;
 import com.unison.ratemaster.Repository.BookingRepository;
 import com.unison.ratemaster.Repository.FreightContainerRepository;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -18,8 +19,12 @@ public class BookingService {
 
     @Transactional
     public Booking saveBooking(Booking booking) {
-        freightContainerRepository.saveAll(booking.getContainer());
-        return bookingRepository.save(booking);
+        try {
+            freightContainerRepository.saveAll(booking.getContainer());
+            return bookingRepository.save(booking);
+        } catch (ConstraintViolationException c) {
+            return booking;
+        }
     }
 
     public List<Booking> getLatestBooking() {
