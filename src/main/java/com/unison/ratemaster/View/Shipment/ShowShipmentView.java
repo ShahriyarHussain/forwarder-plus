@@ -105,25 +105,32 @@ public class ShowShipmentView extends VerticalLayout {
         grid = new Grid<>();
         grid.setMinHeight(35, Unit.EM);
 
-        Grid.Column<Shipment> blColumn = grid.addColumn(Shipment::getBlNo).setSortable(false).setFrozen(true).setAutoWidth(true);
-        Grid.Column<Shipment> bookingColumn = grid.addColumn(shipment -> shipment.getBooking().getBookingNo()).setAutoWidth(true);
-        Grid.Column<Shipment> shipperInvoiceColumn = grid.addColumn(Shipment::getInvoiceNo).setAutoWidth(true);
-        Grid.Column<Shipment> invoiceColumn = grid.addColumn(shipment -> shipment.getInvoice().getInvoiceNo()).setAutoWidth(true);
+        Grid.Column<Shipment> blColumn = grid.addColumn(Shipment::getBlNo).setSortable(false).setFrozen(true)
+                .setAutoWidth(true).setResizable(true);;
+        Grid.Column<Shipment> bookingColumn = grid.addColumn(shipment -> shipment.getBooking().getBookingNo())
+                .setAutoWidth(true).setResizable(true);;
+        Grid.Column<Shipment> shipperInvoiceColumn = grid.addColumn(Shipment::getInvoiceNo).setAutoWidth(true).setResizable(true);;
+        Grid.Column<Shipment> invoiceColumn = grid.addColumn(shipment -> shipment.getInvoice().getInvoiceNo())
+                .setAutoWidth(true).setResizable(true);;
 
         Grid.Column<Shipment> shipperColumn = grid.addColumn(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName())
-                .setTooltipGenerator(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName()).setWidth("11em");
+                .setTooltipGenerator(shipment -> shipment.getShipper() == null ? "" : shipment.getShipper().getName())
+                .setWidth("11em").setResizable(true);;
 
         Grid.Column<Shipment> numOfContainerColumn = grid.addColumn(shipment -> shipment.getBooking().getNumOfContainers() + "x" +
-                shipment.getBooking().getContainerSize().getContainerSize()).setAutoWidth(true);
+                shipment.getBooking().getContainerSize().getContainerSize()).setAutoWidth(true).setResizable(true);;
 
         Grid.Column<Shipment> statusColumn = grid.addColumn(shipment -> shipment.getStatus().name())
-                .setTooltipGenerator(shipment -> shipment.getStatus().toString()).setAutoWidth(true).setSortable(true);
+                .setTooltipGenerator(shipment -> shipment.getStatus().toString()).setAutoWidth(true)
+                .setSortable(true).setResizable(true);;
 
         Grid.Column<Shipment> createdColumn = grid.addColumn(shipment -> shipment.getCreatedOn()
-                .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true).setAutoWidth(true);
+                .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true)
+                .setComparator(Shipment::getCreatedOn).setAutoWidth(true).setResizable(true);;
 
         Grid.Column<Shipment> lastUpdateColumn = grid.addColumn(shipment -> shipment.getLastUpdated()
-                .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true).setAutoWidth(true);
+                .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))).setSortable(true)
+                .setComparator(Shipment::getLastUpdated).setAutoWidth(true).setResizable(true);
 
         Grid.Column<Shipment> mblColumn = grid.addComponentColumn(shipment -> {
             Button downloadButton = new Button(new Icon(VaadinIcon.DOWNLOAD));
@@ -139,7 +146,11 @@ public class ShowShipmentView extends VerticalLayout {
             anchor.getElement().setAttribute("download", true);
             anchor.add(downloadButton);
             return anchor;
-        }).setTooltipGenerator(shipment -> shipment.getMasterBl() == null ? "B/L Not Found" : "").setAutoWidth(true);
+        }).setTooltipGenerator(shipment -> shipment.getMasterBl() == null ? "B/L Not Found" : "")
+                .setAutoWidth(true).setResizable(true);;
+
+        grid.setRowsDraggable(true);
+        grid.setColumnReorderingAllowed(true);
 
 
         List<Shipment> shipments = shipmentService.getAllShipments();
@@ -160,7 +171,7 @@ public class ShowShipmentView extends VerticalLayout {
         headerRow.getCell(shipperColumn).setComponent(
                 createNonFilterHeader("Shipper"));
         headerRow.getCell(numOfContainerColumn).setComponent(
-                createNonFilterHeader("Booking No"));
+                createNonFilterHeader("Container"));
         headerRow.getCell(statusColumn).setComponent(
                 createNonFilterHeader("Status"));
         headerRow.getCell(createdColumn).setComponent(

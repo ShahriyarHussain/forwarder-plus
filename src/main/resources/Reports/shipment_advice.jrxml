@@ -61,9 +61,7 @@
 	<parameter name="GROSS_WEIGHT" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["26,360 KGs"]]></defaultValueExpression>
 	</parameter>
-	<parameter name="CONTAINER_NO" class="java.lang.String" isForPrompting="false">
-		<defaultValueExpression><![CDATA["ABCD1234, ABCD1234,ABCD1234, ABCD1234,ABCD1234, ABCD1234,ABCD1234, ABCD1234,ABCD1234, ABCD1234"]]></defaultValueExpression>
-	</parameter>
+	<parameter name="CONTAINERS" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="SEAL_NO" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["ABCD0987, BNVMC09877, ABCD0987, BNVMC09877, ABCD0987, BNVMC09877, ABCD0987, BNVMC09877, ABCD0987, BNVMC09877"]]></defaultValueExpression>
 	</parameter>
@@ -773,7 +771,7 @@
 						<font fontName="Inter"/>
 						<paragraph leftIndent="4"/>
 					</textElement>
-					<textFieldExpression><![CDATA[$P{CONTAINER_NO}]]></textFieldExpression>
+					<textFieldExpression><![CDATA[$P{CONTAINERS}]]></textFieldExpression>
 				</textField>
 			</frame>
 			<frame>
