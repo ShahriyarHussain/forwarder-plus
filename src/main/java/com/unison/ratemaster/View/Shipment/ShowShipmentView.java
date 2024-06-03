@@ -884,6 +884,7 @@ public class ShowShipmentView extends VerticalLayout {
         Schedule schedule;
         Set<Transshipment> transshipments;
         List<Port> portList = portService.getPorts();
+        Label carrierLabel = new Label("Carrier: N/A");
 
 
         H3 pageTitle = new H3("Create Schedule");
@@ -891,10 +892,14 @@ public class ShowShipmentView extends VerticalLayout {
             pageTitle = new H3("Edit Schedule");
             schedule = shipment.getSchedule();
             transshipments = schedule.getTransshipment();
+            if (schedule.getCarrier() != null) {
+                carrierLabel.setText("Carrier: " + schedule.getCarrier());
+            }
         } else {
             schedule = null;
             transshipments = new HashSet<>();
         }
+
         FormLayout formLayout = new FormLayout();
         formLayout.setMaxWidth("100%");
 
@@ -1011,6 +1016,7 @@ public class ShowShipmentView extends VerticalLayout {
             newSchedule.setDestinationPortEta(destinationPortEta.getValue());
 
             newSchedule.setTransshipment(transshipments);
+            newSchedule.setCarrier(shipment.getCarrier().getName());
 
             Schedule editedSchedule = scheduleService.saveSchedule(newSchedule);
             shipment.setSchedule(editedSchedule);
@@ -1033,7 +1039,7 @@ public class ShowShipmentView extends VerticalLayout {
 
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
 
-        dialog.add(pageTitle, formLayout, transshipmentGrid);
+        dialog.add(pageTitle, carrierLabel, formLayout, transshipmentGrid);
         dialog.getFooter().add(cancelButton);
         dialog.getFooter().add(addButton);
         dialog.setMaxWidth("75%");
