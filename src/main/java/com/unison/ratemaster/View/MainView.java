@@ -2,6 +2,7 @@ package com.unison.ratemaster.View;
 
 import com.unison.ratemaster.Enum.View;
 import com.unison.ratemaster.View.Misc.MiscManagementView;
+import com.unison.ratemaster.View.Misc.ScheduleView;
 import com.unison.ratemaster.View.Other.StandaloneInvoiceView;
 import com.unison.ratemaster.View.Rate.CreateRateView;
 import com.unison.ratemaster.View.Rate.ShowRateView;
@@ -22,7 +23,6 @@ import com.vaadin.flow.router.RouterLink;
 
 @PageTitle("Main")
 @Route(value = "home")
-
 public class MainView extends AppLayout {
 
     public MainView() {
@@ -45,6 +45,7 @@ public class MainView extends AppLayout {
                 createTab(VaadinIcon.SEARCH, View.VIEW_RATE),
                 createTab(VaadinIcon.PLUS, View.CREATE_SHIPMENT),
                 createTab(VaadinIcon.GLOBE, View.VIEW_SHIPMENT),
+                createTab(VaadinIcon.CLOCK, View.SCHEDULE_PANEL),
                 createTab(VaadinIcon.DATABASE, View.MISC_MANAGEMENT),
                 createTab(VaadinIcon.BRIEFCASE, View.CREATE_INVOICE)
         );
@@ -79,6 +80,9 @@ public class MainView extends AppLayout {
                 break;
             case CREATE_INVOICE:
                 link.setRoute(StandaloneInvoiceView.class);
+                break;
+            case SCHEDULE_PANEL:
+                link.setRoute(ScheduleView.class);
                 break;
 //            case CREATE_BILL_OF_LADING:
 //                link.setRoute(CreateBLView.class);

@@ -13,5 +13,8 @@ import java.util.List;
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
     @Query("select s from Schedule s where s.loadingPortEtd > :date")
-    List<Schedule> getValidSchedules(@Param("date") LocalDate date);
+    List<Schedule> getScheduleByDate(@Param("date") LocalDate date);
+
+    @Query("select s from Schedule s")
+    List<Schedule> getAllSchedules();
 }
