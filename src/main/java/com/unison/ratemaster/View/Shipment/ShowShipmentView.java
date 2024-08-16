@@ -199,9 +199,14 @@ public class ShowShipmentView extends VerticalLayout {
             }
         });
         menu.add(new Hr());
+        menu.addItem("Create Shipping Order", event -> {
+            if (event.getItem().isPresent()) {
+                validateParamsForShippingOrder(event.getItem().get()).open();
+            }
+        });
         menu.addItem("Shipment Advice", event -> {
             if (event.getItem().isPresent()) {
-                validateParams(event.getItem().get()).open();
+                validateParamsForShipmentAdvice(event.getItem().get()).open();
             }
         });
         menu.addItem("Create Invoice", event -> {
@@ -223,7 +228,86 @@ public class ShowShipmentView extends VerticalLayout {
         add(title, layout);
     }
 
-    private Dialog validateParams(Shipment shipment) {
+    private Dialog validateParamsForShippingOrder(Shipment shipment) {
+
+        List<String> errorList = new LinkedList<>();
+        Dialog dialog = new Dialog();
+        H4 title = new H4();
+        ListBox<String> listBox = new ListBox<>();
+
+        dialog.setCloseOnEsc(true);
+        dialog.getFooter().add(new Button("Close", event -> dialog.close()));
+        dialog.add(title, listBox);
+
+        //  শিপমেন্ট এর তথ্য যাচাইকরণ
+        if (shipment.getShipper() == null || shipment.getShipper().getName() == null) {
+            errorList.add("Shipper Missing");
+        }
+        if (shipment.getNotifyParty() == null || shipment.getNotifyParty().getName() == null) {
+            errorList.add("Notify Party Missing");
+        }
+
+
+        // শিপমেন্ট সংলগ্ন বুকিং এর তথ্য যাচাইকরণ । যদি না থাকে তবে আর কোনও যাচাইকরণ প্রয়োজন নেই
+        if (shipment.getBooking() == null) {
+            errorList.add("No Booking Found for shipment. Please create a new or choose existing!");
+            title.setText("Please make corrections for following " + errorList.size() + " fields");
+            listBox.setItems(errorList);
+            return dialog;
+        }
+        if (shipment.getBooking().getBookingNo() == null) {
+            errorList.add("Booking No. Not Provided!");
+        }
+        if (shipment.getCommodity().getName() == null) {
+            errorList.add("COMMODITY Missing");
+        }
+        if (shipment.getBooking().getContainerSize().getContainerSize() == null) {
+            errorList.add("Please provide container size");
+        }
+        if (shipment.getBooking().getNumOfContainers() == null) {
+            errorList.add("Please provide how many containers");
+        }
+
+
+        // শিডিউল যাচাইকরণ । যদি না থাকে তবে আর কোনও যাচাইকরণ প্রয়োজন নেই
+        if (shipment.getSchedule().getPortOfLoading() == null) {
+            errorList.add("Please provide Port Of Loading!");
+        }
+        if (shipment.getSchedule().getPolVesselName() == null) {
+            errorList.add("Please provide Feeder Vessel Name!");
+        }
+        if (shipment.getSchedule().getPortOfDestination() == null) {
+            errorList.add("Please provide Port Of Loading!");
+        }
+
+
+        // যদি ট্রান্সশিপমেন্ট থাকে তবে এর তথ্য যাচাইকরণ
+        if (errorList.isEmpty()) {
+            title.setText("ALL OK!");
+            TextField cnfAgentTextBox = new TextField("C & F Agent Name");
+            TextField cngAgentContactBox = new TextField("C & F Agent Contact");
+
+            ComboBox<ContactDetails> contactDetailsComboBox = new ComboBox<>("Choose Contact Details");
+            contactDetailsComboBox.setItems(contactDetailsService.getAllContactDetails());
+            contactDetailsComboBox.setItemLabelGenerator(ContactDetails::getName);
+            contactDetailsComboBox.addValueChangeListener(e -> {
+                if (e.getValue() != null) {
+                    contactDetailsComboBox.setLabel("You can now download!");
+                    dialog.getFooter().add(getShippingOrderDownloadButton(shipment, cnfAgentTextBox.getValue(),
+                            cngAgentContactBox.getValue(), contactDetailsComboBox.getValue()));
+                }
+            });
+            dialog.add(cnfAgentTextBox, cngAgentContactBox, contactDetailsComboBox);
+        } else {
+            listBox.setItems(errorList);
+            title.setText("Please make corrections for following " + errorList.size() + " fields");
+        }
+        dialog.setResizable(true);
+        dialog.setMinWidth(14, Unit.EM);
+        return dialog;
+    }
+
+    private Dialog validateParamsForShipmentAdvice(Shipment shipment) {
 
         List<String> errorList = new LinkedList<>();
         Dialog dialog = new Dialog();
@@ -385,6 +469,32 @@ public class ShowShipmentView extends VerticalLayout {
         return anchor;
     }
 
+    private Anchor getShippingOrderDownloadButton(Shipment shipment, String cnfAgent, String cnfAgentContact,
+                                                  ContactDetails contactDetails) {
+
+        Anchor anchor = new Anchor(new StreamResource("Shipping_order_" + shipment.getShipper().getName() + ".pdf",
+                (InputStreamFactory) () -> {
+            Map<String, Object> parameters;
+            String report = "shipping_order.jasper";
+            parameters = prepareParamsForShippingOrder(shipment, contactDetails, cnfAgent, cnfAgentContact);
+
+            try (InputStream stream = getClass().getResourceAsStream(REPORTS_PATH + report)) {
+                return new ByteArrayInputStream(JasperRunManager.runReportToPdf(stream, parameters,
+                        new JREmptyDataSource(1)));
+            } catch (JRException | IOException e) {
+                throw new RuntimeException(e);
+            }
+        }), "");
+
+        Button downloadButton = new Button(new Icon(VaadinIcon.DOWNLOAD_ALT));
+        downloadButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        downloadButton.setText("Download");
+
+        anchor.getElement().setAttribute("download", true);
+        anchor.add(downloadButton);
+        return anchor;
+    }
+
     private Map<String, Object> prepareParamsForShipmentAdvice(Shipment shipment, ContactDetails contactDetails) {
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("LOGO_URL", Util.imagePath);
@@ -415,6 +525,38 @@ public class ShowShipmentView extends VerticalLayout {
 
         paramMap.put("SEAL_NO", getSealNo(shipment.getBooking()));
         paramMap.put("CONTAINERS", getContainers(shipment.getBooking()));
+
+        paramMap.put("SIGNED_BY", contactDetails.getName());
+        paramMap.put("SIGNED_BY_EMAIL", contactDetails.getEmail());
+        paramMap.put("SIGNED_BY_CONTACT", contactDetails.getContactNo());
+
+        return paramMap;
+    }
+
+    private Map<String, Object> prepareParamsForShippingOrder(Shipment shipment, ContactDetails contactDetails,
+                                                              String cnfAgent, String cnfAgentContact) {
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("LOGO_URL", Util.imagePath);
+
+        paramMap.put("DATE", Util.formatDateTime(Util.GENERIC_DATE_PATTERN, LocalDate.now()));
+        paramMap.put("BOOKING_NO", shipment.getBooking().getBookingNo());
+
+        paramMap.put("CNF_AGENT", cnfAgent);
+        paramMap.put("CONTACT", cnfAgentContact);
+        paramMap.put("SHIPPER_NAME", shipment.getShipper().getName());
+        paramMap.put("NOTIFY_PARTY", shipment.getNotifyParty().getName());
+
+        paramMap.put("CONTAINERS", shipment.getBooking().getNumOfContainers() + "x" +
+                shipment.getBooking().getContainerSize().getContainerSize());
+        paramMap.put("GOODS_DESC", shipment.getCommodity().getName());
+        paramMap.put("QUANTITY", calculateQuantity(shipment.getBooking()));
+
+        Schedule schedule = shipment.getSchedule();
+        paramMap.put("PORT_OF_LOADING", schedule.getPortOfLoading().getPortCityAndCountry());
+        paramMap.put("VESSEL", schedule.getPolVesselName());
+        paramMap.put("PORT_OF_DELIVERY", schedule.getPortOfDestination().getPortCityAndCountry());
+
+        paramMap.put("SHIPPING_LINE", shipment.getCarrier().getName());
 
         paramMap.put("SIGNED_BY", contactDetails.getName());
         paramMap.put("SIGNED_BY_EMAIL", contactDetails.getEmail());

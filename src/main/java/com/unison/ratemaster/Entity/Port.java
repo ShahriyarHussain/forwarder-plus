@@ -27,4 +27,8 @@ public class Port {
     public String getPortLabel() {
         return getPortShortCode() + " - " + getPortName() + ", " + getPortCountry();
     }
+
+    public String getPortCityAndCountry() {
+        return getPortName() + ", " + getPortCountry();
+    }
 }

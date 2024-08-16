@@ -1,0 +1,741 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.6.final using JasperReports Library version 6.20.6-5c96b6aa8a39ac1dc6b6bea4b81168e16dd39231  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="shipment_advice" pageWidth="595" pageHeight="842" whenNoDataType="NoDataSection" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="e9a1dcb5-78dc-44eb-9aad-3254286e3581">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<property name="com.jaspersoft.studio.unit.pageHeight" value="inch"/>
+	<property name="com.jaspersoft.studio.unit.pageWidth" value="inch"/>
+	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w1" value="561"/>
+	<property name="com.jaspersoft.studio.property.dataset.dialog.DatasetDialog.sash.w2" value="426"/>
+	<style name="Table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<subDataset name="Dataset1" uuid="a26bbf1f-5d5c-40ae-9e0e-f7ba4012cc6d">
+		<queryString>
+			<![CDATA[]]>
+		</queryString>
+		<field name="detailName" class="java.lang.String"/>
+		<field name="detailValue" class="java.lang.String"/>
+	</subDataset>
+	<parameter name="BOOKING_NO" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="SHIPPER_NAME" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="CONTAINERS" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="PORT_OF_LOADING" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="LOGO_URL" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["/home/shihab/JaspersoftWorkspace/forwarder_plus/logo_best.png"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SIGNED_BY_CONTACT" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="SIGNED_BY" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="SIGNED_BY_EMAIL" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="PORT_OF_DELIVERY" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="NOTIFY_PARTY" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="CNF_AGENT" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="GOODS_DESC" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="CONTACT" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="VESSEL" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="SHIPPING_LINE" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="DATE" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="QUANTITY" class="java.lang.String" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<title>
+		<band height="38" splitType="Stretch">
+			<line>
+				<reportElement positionType="Float" x="-20" y="30" width="595" height="1" uuid="70ba4e2c-cded-484c-848d-af586c3e2668">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="2.0" lineColor="#F70521"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="169" y="-10" width="247" height="30" uuid="1a2dd1a2-9b16-4d25-b025-479b466bf604"/>
+				<textElement textAlignment="Center">
+					<font fontName="Inter" size="24" isBold="true" isUnderline="false"/>
+				</textElement>
+				<text><![CDATA[UNISON SHIPPING]]></text>
+			</staticText>
+			<image>
+				<reportElement x="111" y="-14" width="50" height="50" uuid="8202f00e-1183-4bd1-97e1-ed552eb618e4"/>
+				<imageExpression><![CDATA[$P{LOGO_URL}]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement positionType="Float" x="214" y="18" width="156" height="12" forecolor="#030303" uuid="a03fdcbc-396a-4c1a-ab3e-eb5d971d928c"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[AIN NO: 101090215]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="184">
+			<staticText>
+				<reportElement x="198" y="0" width="170" height="30" uuid="d7710edd-138a-4279-85a0-0bff0d93e127"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Inter" size="18" isBold="true" isUnderline="true"/>
+				</textElement>
+				<text><![CDATA[SHIPPING ORDER]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="90" width="48" height="17" forecolor="#030303" uuid="5835b2b2-cea8-4cd3-99a2-012f5dea420f"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[MLO]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="58" y="90" width="148" height="17" uuid="95ab633a-2db8-4f50-a522-1969215a51ce">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{SHIPPING_LINE}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="41" width="30" height="17" forecolor="#030303" uuid="2699230a-580f-4770-b6b0-071d0cd84176"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Date:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="58" width="30" height="15" forecolor="#030303" uuid="eb3bbb13-a6fc-4e2c-8e62-275323894155"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[To]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="73" width="88" height="12" forecolor="#030303" uuid="5cbb3620-70dc-4e8d-be8e-f51d92c48c33"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Stuffing Program,]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="32" y="41" width="148" height="17" uuid="7f907d3d-7c1f-43cf-b637-9174c618ea7a">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{DATE}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="false">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="0" y="143" width="554" height="16" uuid="d4798f6f-d3ff-49b7-b03a-181fce3d5cae">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Please accept the under-noted goods for stuffing and issue Terminal Receipt (T.R.)/ Shed Receipt for the"]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="58" y="107" width="148" height="17" uuid="fdec1e12-0428-4dcd-9a21-1d4926331e91">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{CONTAINERS}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="107" width="48" height="17" forecolor="#030303" uuid="bb23a1d8-1d4f-4c56-8236-02402eca60eb"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Container]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="50" y="90" width="8" height="17" forecolor="#030303" uuid="549309df-41cb-44fa-80bd-bcd939f41522"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="50" y="107" width="8" height="17" forecolor="#030303" uuid="3df6fe62-e6b9-416d-a186-9a4ee1a3c93b"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="130" width="108" height="13" forecolor="#030303" uuid="3561c166-9f35-4f70-a15d-e5b4171716d8"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Respected Concern,]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="false">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="1" y="159" width="554" height="16" uuid="2c34e171-fd2d-4295-bd00-c13a61dcaea5">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Inter" size="9" isBold="true"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Vessel & Voyage: " + $P{VESSEL} ]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="176">
+			<staticText>
+				<reportElement positionType="Float" x="20" y="0" width="80" height="12" forecolor="#030303" uuid="b899547d-a8ca-404e-8fc3-d60d594dd22f"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Shipper]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="0" width="18" height="12" forecolor="#030303" uuid="ef7fa112-2c4c-42ce-9727-657492b18403"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[01.]]></text>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="110" y="12" width="445" height="1" forecolor="#696969" uuid="87308631-1e0e-4065-8c86-6ecf33d1d3ca">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted" lineColor="#696969"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="15" width="18" height="12" forecolor="#030303" uuid="29e8be55-d2d3-41a1-b595-79069f8a57f1"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[02.]]></text>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="110" y="27" width="445" height="1" forecolor="#696969" uuid="c36c7c99-123f-42e7-8203-6952ec23457f">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted" lineColor="#696969"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="20" y="15" width="80" height="12" forecolor="#030303" uuid="8e4bb4eb-73d6-48e1-ba08-fcf286f4234a"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Buyer/Notify Party]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="31" width="18" height="12" forecolor="#030303" uuid="3e578db2-6bdf-475a-ac64-f47b9346e8ea"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[03.]]></text>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="110" y="43" width="275" height="1" forecolor="#696969" uuid="fba00139-a535-450c-8706-2376313b719c">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted" lineColor="#696969"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="20" y="31" width="80" height="12" forecolor="#030303" uuid="ee8b8e74-1f9e-4aaa-9471-30444019cf03"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[C & F Agents]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="46" width="18" height="12" forecolor="#030303" uuid="1c980f8e-bf39-42be-95da-b5e0af1aa7c2"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[04.]]></text>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="110" y="58" width="445" height="1" forecolor="#696969" uuid="fb0f4fd4-30de-4332-9324-9eaafda72ba9">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted" lineColor="#696969"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="20" y="46" width="80" height="12" forecolor="#030303" uuid="458284a4-94b0-4128-8955-73f0b4c69c38"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Goods Description]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="62" width="18" height="12" forecolor="#030303" uuid="d174125d-d402-4b9b-a1c8-9c5170fdca9b"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[05.]]></text>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="110" y="74" width="445" height="1" forecolor="#696969" uuid="ebeed3ab-1c66-4ec5-bacc-122005c300cd">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted" lineColor="#696969"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="20" y="62" width="80" height="12" forecolor="#030303" uuid="6a1ce64a-5dab-4b6d-a288-90e385935410">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Total Quantity]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="78" width="18" height="12" forecolor="#030303" uuid="4e193209-762b-4116-a50f-ae74453a8c33"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[06.]]></text>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="110" y="90" width="445" height="1" forecolor="#696969" uuid="67f2d51d-8e18-403d-805a-770ac5df4b98">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted" lineColor="#696969"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="20" y="78" width="80" height="12" forecolor="#030303" uuid="184532d8-4c76-41f9-9e7e-dae1c5443beb"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Place Of Receipt]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="94" width="18" height="12" forecolor="#030303" uuid="95879f46-d9af-42e1-a2c2-0bcf7971f4fa"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[07.]]></text>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="110" y="106" width="445" height="1" forecolor="#696969" uuid="a7f156a3-1eb3-440b-9540-965ae113d7ab">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted" lineColor="#696969"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="20" y="94" width="80" height="12" forecolor="#030303" uuid="69ec86cb-77aa-4589-b3c0-b4ad2a6c01a9"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Port Of Loading]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="110" width="18" height="12" forecolor="#030303" uuid="010ed6e9-f2e9-44aa-a7c0-e1f12ce909d3"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[08.]]></text>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="110" y="122" width="445" height="1" forecolor="#696969" uuid="b23fc459-4809-4580-b5e9-f6bbe8a2560d">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted" lineColor="#696969"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="20" y="110" width="80" height="12" forecolor="#030303" uuid="f4f1e34f-19c8-4177-b036-67e28a7b7b63"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Port Of Discharge]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="126" width="18" height="12" forecolor="#030303" uuid="cd9bdbad-2425-45e1-96df-8a16eda00184"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[09.]]></text>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="110" y="138" width="445" height="1" forecolor="#696969" uuid="c8051e25-8849-4f25-ba97-4c4a7dfd8e74">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted" lineColor="#696969"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="20" y="126" width="80" height="12" forecolor="#030303" uuid="0d01731a-135d-49fe-8a16-1f3e6ad588cd"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Port Of Delivery]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="2" y="141" width="18" height="12" forecolor="#030303" uuid="45e8af93-d026-4cad-94b5-063d69340e1a"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[10.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="20" y="141" width="80" height="12" forecolor="#030303" uuid="bbacea08-bf8d-49a5-858c-e8b4bbefdfe6"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Booking No]]></text>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="110" y="153" width="445" height="1" forecolor="#696969" uuid="197ee85c-2313-445c-ab6c-d13b94211d04">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted" lineColor="#696969"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="390" y="31" width="38" height="12" forecolor="#030303" uuid="d4aeca94-3971-4037-8f46-5d0c15085ab0"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[Contact]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="428" y="31" width="10" height="12" forecolor="#030303" uuid="796bafcf-82dc-46d3-9d8d-16edfa881708">
+					<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+				</reportElement>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<line direction="BottomUp">
+				<reportElement x="438" y="42" width="115" height="1" forecolor="#696969" uuid="1177795c-9557-4d6f-95b6-aa5d864a1db9">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineStyle="Dotted" lineColor="#696969"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="100" y="62" width="10" height="12" forecolor="#030303" uuid="9949085e-4023-4478-a21a-18c493490435">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="100" y="110" width="10" height="12" forecolor="#030303" uuid="07406e69-c325-4228-b6c2-ae97ded490df"/>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="100" y="15" width="10" height="12" forecolor="#030303" uuid="1084b7c0-c74a-4681-852c-e8c4f2ffda6d"/>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="100" y="141" width="10" height="12" forecolor="#030303" uuid="2cd7ad77-5ed1-4972-8cad-d42976437731"/>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="100" y="78" width="10" height="12" forecolor="#030303" uuid="3e12cb5f-b3d8-41da-82ec-fb935eb9e17e">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="100" y="46" width="10" height="12" forecolor="#030303" uuid="573af1f2-33ab-4079-8739-bedf55c4aab2"/>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="100" y="31" width="10" height="12" forecolor="#030303" uuid="e61cadc4-13df-488e-8408-63495a2e9664"/>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="100" y="0" width="10" height="12" forecolor="#030303" uuid="946fca4b-e141-4716-b5dc-555116699e0a"/>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="100" y="94" width="10" height="12" forecolor="#030303" uuid="765da808-3405-41c3-970d-12dea39daa9f"/>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="100" y="126" width="10" height="12" forecolor="#030303" uuid="0bb86765-032f-43fe-bbb1-523dd95143b4"/>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="110" y="0" width="444" height="12" uuid="0518bf7e-7160-4d23-b690-4fb9257bff08">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{SHIPPER_NAME}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="110" y="15" width="444" height="12" uuid="bf7daafc-0be7-451e-94af-67ac9aed758d">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{NOTIFY_PARTY}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="110" y="46" width="444" height="12" uuid="d5a09dd3-bf63-4eb4-960b-1e9dbb2ba6d1">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{GOODS_DESC}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="110" y="62" width="444" height="12" uuid="39ad9aeb-36ed-4955-bd18-4680d47694e5">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{QUANTITY}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" isPrintRepeatedValues="false" x="110" y="78" width="444" height="12" uuid="31842752-0821-476c-90ae-5f569562fd42">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="110" y="94" width="444" height="12" uuid="7ccd15c6-9ce3-4710-8d41-9472e5c9c2ef">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{PORT_OF_LOADING}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" isPrintRepeatedValues="false" x="110" y="110" width="444" height="12" uuid="6860e84f-8d88-4208-9e1a-069bc26a9fa3">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="110" y="126" width="444" height="12" uuid="c88b03b9-1a05-41f0-86d0-4fb3e07eef16">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{PORT_OF_DELIVERY}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="110" y="141" width="444" height="12" uuid="217d23cd-a441-4708-89ed-4d757cdbbebe">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{BOOKING_NO}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="110" y="31" width="274" height="12" uuid="f2ffee8d-da7d-40e4-9d56-36a540844500">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{CNF_AGENT}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="438" y="31" width="116" height="11" uuid="c17e96a3-4cf4-413d-b168-9ba5d2c7094b">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Justified">
+					<font fontName="Inter" size="9"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{CONTACT}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="46">
+			<line>
+				<reportElement positionType="Float" x="-19" y="14" width="595" height="1" forecolor="#F70521" backcolor="#F70521" uuid="0a61cdaf-7a6f-44b8-b600-5fbf16efbce3">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="2.0" lineColor="#F70521"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="0" y="16" width="554" height="30" forecolor="#171443" uuid="d44e4003-9907-46ff-9b4b-cbaf86d15934"/>
+				<textElement textAlignment="Center" markup="none">
+					<font fontName="Inter" size="8"/>
+				</textElement>
+				<text><![CDATA[Head Office: 102/A Kakrail, 3rd Floor, Dhaka – 1217, Mobile: +880 1713313488, +8801708672652. Email: sales@unisonshippingbd.com,
+rashid@unisonshippingbd.com
+Chattogram Office: Faruk Chamber, 1403 Mujib Road, Agrabad, Chattogram.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="0" width="554" height="10" forecolor="#808080" uuid="64282ce9-26b6-4d67-8cae-7772ea22789c"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Inter" size="8"/>
+				</textElement>
+				<text><![CDATA[This document is system generated does not require any signature]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="301" splitType="Stretch">
+			<staticText>
+				<reportElement positionType="Float" x="1" y="14" width="554" height="93" forecolor="#F70521" uuid="d75aa995-e400-44e1-aec8-8db31a11dc1f"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[1) When issuing TR/Shed Receipt, be particular to state quantity and measurement.
+2) Tally must be maintained correctly as per marks & Nos: by physical counting.
+3) Cargo must be handled with care while consolidation and stuffing, so that no damage occurs.
+4) All goods in bad codition must be refused.
+5) Cargo storege in containers must done promptly.
+6) Containers must be inspected in respect of leakages, damages, etc., prior to stuffing. No. cargo
+should be stuffed in the container if any leakage or damage is detected.
+
+]]></text>
+			</staticText>
+			<textField textAdjust="StretchHeight" isBlankWhenNull="false">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="2" y="220" width="552" height="66" uuid="e0edd038-ac39-4b38-b052-50f6b815c52f">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Inter"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Respectfully" + System.lineSeparator() +
+
+$P{SIGNED_BY} + System.lineSeparator() +
+"E-MAIL: " + $P{SIGNED_BY_EMAIL}+ System.lineSeparator() +
+"CELL : " + $P{SIGNED_BY_CONTACT}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="Float" x="1" y="120" width="554" height="56" forecolor="#F70521" uuid="161b2d03-7117-4449-b385-002017c9d86e"/>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9"/>
+				</textElement>
+				<text><![CDATA[1) This shipping order is subject to availability of space/container and waiver where applicable.
+2) Cut-of time for stuffing of dry containers: 0730 hrs of the day vessel Berthing incase of container Vessels and 48 hrs prior to the sailling in case of Combi-Vessels.
+3) No additional clause will be allowed in Bills of Lading.
+4) Bills of Lading must be submitted within 24 hrs from the time of shipment.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="0" y="0" width="554" height="14" forecolor="#F70521" uuid="00338ee2-a379-4c24-bb03-59a7d9b42680">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9" isBold="true" isUnderline="true"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<text><![CDATA[Important Notes:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="1" y="107" width="554" height="13" forecolor="#F70521" uuid="e7336ccf-b1a1-4662-a7fe-0431881a56b4">
+					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Justified" markup="none">
+					<font fontName="Inter" size="9" isBold="true" isUnderline="true"/>
+					<paragraph leftIndent="3"/>
+				</textElement>
+				<text><![CDATA[Note For Shipper:]]></text>
+			</staticText>
+		</band>
+	</summary>
+</jasperReport>
