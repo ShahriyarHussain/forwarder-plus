@@ -45,6 +45,7 @@ import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperRunManager;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.security.PermitAll;
 import java.io.ByteArrayInputStream;
@@ -1146,6 +1147,10 @@ public class ShowShipmentView extends VerticalLayout {
 
         addButton.addClickListener(e -> {
             Schedule newSchedule = Objects.requireNonNullElseGet(schedule, Schedule::new);
+            if (!StringUtils.isNotBlank(feederVesselName.getValue()) || portOfLoading.getValue() == null) {
+                Util.getPopUpNotification("Please Fill Up Mandatory Values", 2500, NotificationVariant.LUMO_ERROR).open();
+                return;
+            }
             newSchedule.setPolVesselName(feederVesselName.getValue());
             newSchedule.setPortOfLoading(portOfLoading.getValue());
             newSchedule.setLoadingPortEta(polEta.getValue());
@@ -1163,11 +1168,7 @@ public class ShowShipmentView extends VerticalLayout {
             Schedule editedSchedule = scheduleService.saveSchedule(newSchedule);
             shipment.setSchedule(editedSchedule);
             shipmentService.saveEditedShipment(shipment);
-            if (schedule != null) {
-                Util.getPopUpNotification("Schedule Saved!", 2500, NotificationVariant.LUMO_SUCCESS).open();
-            } else {
-                Util.getPopUpNotification("Schedule Saved!", 2500, NotificationVariant.LUMO_SUCCESS).open();
-            }
+            Util.getPopUpNotification("Schedule Saved!", 2500, NotificationVariant.LUMO_SUCCESS).open();
         });
 
         HorizontalLayout tsLayout = new HorizontalLayout();
