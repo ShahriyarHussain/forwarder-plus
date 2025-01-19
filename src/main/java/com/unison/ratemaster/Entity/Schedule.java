@@ -25,6 +25,7 @@ public class Schedule {
     private LocalDate loadingPortEta;
     private LocalDate loadingPortEtd;
     private LocalDate mvPortFeederEta;
+
     @OneToOne
     private Port motherVesselPort;
 
@@ -34,6 +35,9 @@ public class Schedule {
 
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Set<Transshipment> transshipment;
+
+    private String originDoorServiceLocation;
+    private String destinationDoorServiceLocation;
 
     public String getScheduleSummary() {
         return this.getPortOfLoading().getPortName() + " to "
