@@ -100,7 +100,7 @@
 				<text><![CDATA[MLO]]></text>
 			</staticText>
 			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
-				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="58" y="90" width="148" height="17" uuid="95ab633a-2db8-4f50-a522-1969215a51ce">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="58" y="90" width="497" height="17" uuid="95ab633a-2db8-4f50-a522-1969215a51ce">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
@@ -131,7 +131,7 @@
 				<text><![CDATA[Stuffing Program,]]></text>
 			</staticText>
 			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
-				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="32" y="41" width="148" height="17" uuid="7f907d3d-7c1f-43cf-b637-9174c618ea7a">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="32" y="41" width="523" height="17" uuid="7f907d3d-7c1f-43cf-b637-9174c618ea7a">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<textElement textAlignment="Left" verticalAlignment="Justified">
@@ -151,7 +151,7 @@
 				<textFieldExpression><![CDATA["Please accept the under-noted goods for stuffing and issue Terminal Receipt (T.R.)/ Shed Receipt for the"]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight" isBlankWhenNull="true">
-				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="58" y="107" width="148" height="17" uuid="fdec1e12-0428-4dcd-9a21-1d4926331e91">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="58" y="107" width="497" height="17" uuid="fdec1e12-0428-4dcd-9a21-1d4926331e91">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
@@ -189,14 +189,14 @@
 				<text><![CDATA[Respected Concern,]]></text>
 			</staticText>
 			<textField textAdjust="StretchHeight" isBlankWhenNull="false">
-				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="1" y="159" width="554" height="16" uuid="2c34e171-fd2d-4295-bd00-c13a61dcaea5">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="0" y="159" width="555" height="16" uuid="2c34e171-fd2d-4295-bd00-c13a61dcaea5">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Inter" size="9" isBold="true"/>
 					<paragraph leftIndent="3"/>
 				</textElement>
-				<textFieldExpression><![CDATA["Vessel & Voyage: " + $P{VESSEL} ]]></textFieldExpression>
+				<textFieldExpression><![CDATA["Vessel & Voyage: " + $P{VESSEL}]]></textFieldExpression>
 			</textField>
 		</band>
 	</pageHeader>
@@ -676,7 +676,7 @@ Chattogram Office: Faruk Chamber, 1403 Mujib Road, Agrabad, Chattogram.]]></text
 		</band>
 	</pageFooter>
 	<summary>
-		<band height="301" splitType="Stretch">
+		<band height="258" splitType="Stretch">
 			<staticText>
 				<reportElement positionType="Float" x="1" y="14" width="554" height="93" forecolor="#F70521" uuid="d75aa995-e400-44e1-aec8-8db31a11dc1f"/>
 				<textElement textAlignment="Justified" markup="none">
@@ -693,7 +693,7 @@ should be stuffed in the container if any leakage or damage is detected.
 ]]></text>
 			</staticText>
 			<textField textAdjust="StretchHeight" isBlankWhenNull="false">
-				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="2" y="220" width="552" height="66" uuid="e0edd038-ac39-4b38-b052-50f6b815c52f">
+				<reportElement positionType="Float" stretchType="ElementGroupHeight" x="2" y="190" width="552" height="66" uuid="e0edd038-ac39-4b38-b052-50f6b815c52f">
 					<property name="com.jaspersoft.studio.unit.leftIndent" value="px"/>
 				</reportElement>
 				<textElement verticalAlignment="Middle">

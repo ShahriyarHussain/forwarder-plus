@@ -256,6 +256,14 @@ public class ShowShipmentView extends VerticalLayout {
             listBox.setItems(errorList);
             return dialog;
         }
+        if (shipment.getSchedule() == null) {
+            errorList.add("No Schedule Found. Please Add Feeder Details");
+            title.setText("Please make corrections for following " + errorList.size() + " fields");
+            listBox.setItems(errorList);
+            return dialog;
+        }
+
+
         if (shipment.getBooking().getBookingNo() == null) {
             errorList.add("Booking No. Not Provided!");
         }
@@ -1046,6 +1054,8 @@ public class ShowShipmentView extends VerticalLayout {
         FormLayout formLayout = new FormLayout();
         formLayout.setMaxWidth("100%");
 
+        TextField originInlandLocation = new TextField("Origin Inland Location");
+
         TextField feederVesselName = new TextField("Feeder Vessel Name");
 
         ComboBox<Port> portOfLoading = Util.getPortComboBoxByItemListAndTitle(portList, "Loading Port");
@@ -1071,6 +1081,8 @@ public class ShowShipmentView extends VerticalLayout {
                 mvPortEta.setLabel("Feeder ETA" + vesselPort.getPortShortCode());
             }
         });
+
+        TextField destInlandLocation = new TextField("Destination Inland Location");
 
         ComboBox<Port> destinationPort = Util.getPortComboBoxByItemListAndTitle(portList, "Destination Port");
         DatePicker destinationPortEta = new DatePicker(destinationPort.getLabel() + " ETA");
@@ -1142,6 +1154,10 @@ public class ShowShipmentView extends VerticalLayout {
             transshipmentGrid.setItems(schedule.getTransshipment());
             destinationPort.setValue(schedule.getPortOfDestination());
             destinationPortEta.setValue(schedule.getDestinationPortEta());
+            originInlandLocation.setValue(StringUtils.isNotBlank(schedule.getOriginDoorServiceLocation()) ?
+                    schedule.getOriginDoorServiceLocation() : "");
+            destInlandLocation.setValue(StringUtils.isNotBlank(schedule.getDestinationDoorServiceLocation()) ?
+                    schedule.getDestinationDoorServiceLocation() : "");
             addButton.setText("Save");
         }
 
@@ -1149,7 +1165,7 @@ public class ShowShipmentView extends VerticalLayout {
             Schedule newSchedule = Objects.requireNonNullElseGet(schedule, Schedule::new);
             if (!StringUtils.isNotBlank(feederVesselName.getValue()) || portOfLoading.getValue() == null) {
                 Util.getPopUpNotification("Please Fill Up Mandatory Values", 2500, NotificationVariant.LUMO_ERROR).open();
-                return;
+                return; 
             }
             newSchedule.setPolVesselName(feederVesselName.getValue());
             newSchedule.setPortOfLoading(portOfLoading.getValue());
@@ -1164,6 +1180,9 @@ public class ShowShipmentView extends VerticalLayout {
 
             newSchedule.setTransshipment(transshipments);
             newSchedule.setCarrier(shipment.getCarrier().getName());
+            
+            newSchedule.setOriginDoorServiceLocation(originInlandLocation.getValue());
+            newSchedule.setDestinationDoorServiceLocation(destInlandLocation.getValue());
 
             Schedule editedSchedule = scheduleService.saveSchedule(newSchedule);
             shipment.setSchedule(editedSchedule);
@@ -1176,11 +1195,14 @@ public class ShowShipmentView extends VerticalLayout {
         tsLayout.setAlignItems(Alignment.END);
         tsLayout.add(transhipmentVessel, tsPort, tsPortEta, addTsButton);
 
-        formLayout.add(feederVesselName, portOfLoading, polEta, polEtd, motherVesselPort, mvPortEta,
-                destinationPort, destinationPortEta, transhipmentVessel, tsPort, tsPortEta, addTsButton);
+        formLayout.add(feederVesselName, originInlandLocation, portOfLoading, polEta, polEtd, motherVesselPort, mvPortEta, new Hr(),
+                destInlandLocation, destinationPort, destinationPortEta, transhipmentVessel, tsPort, tsPortEta, addTsButton);
         Button cancelButton = new Button("Close", e -> dialog.close());
 
-        formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
+        formLayout.setColspan(originInlandLocation, 2);
+        formLayout.setColspan(destInlandLocation, 3);
+
+        formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 3));
 
         dialog.add(pageTitle, carrierLabel, formLayout, transshipmentGrid);
         dialog.getFooter().add(cancelButton);
